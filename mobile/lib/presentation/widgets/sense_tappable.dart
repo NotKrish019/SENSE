@@ -32,6 +32,15 @@ class SenseTappable extends StatefulWidget {
   final bool circle;
   final ValueChanged<bool>? onHighlightChanged;
 
+  /// Optional ring colour (defaults to [focusRingColor]); used by the
+  /// redesign preview, which needs a ring that contrasts with parchment.
+  final Color? focusColor;
+
+  /// Optional hover tint and hover callback (pointer devices); used by the
+  /// redesign preview. Defaults keep the existing behaviour.
+  final Color? hoverColor;
+  final ValueChanged<bool>? onHover;
+
   const SenseTappable({
     super.key,
     required this.child,
@@ -45,6 +54,9 @@ class SenseTappable extends StatefulWidget {
     this.borderRadius,
     this.circle = false,
     this.onHighlightChanged,
+    this.focusColor,
+    this.hoverColor,
+    this.onHover,
   });
 
   /// Colour of the keyboard focus ring.
@@ -80,6 +92,8 @@ class _SenseTappableState extends State<SenseTappable> {
           onTap: widget.onTap,
           onHighlightChanged: widget.onHighlightChanged,
           onFocusChange: (f) => setState(() => _focused = f),
+          onHover: widget.onHover,
+          hoverColor: widget.hoverColor,
           customBorder: widget.circle
               ? const CircleBorder()
               : RoundedRectangleBorder(borderRadius: radius),
@@ -90,7 +104,8 @@ class _SenseTappableState extends State<SenseTappable> {
                 ? BoxDecoration(
                     shape: widget.circle ? BoxShape.circle : BoxShape.rectangle,
                     borderRadius: widget.circle ? null : radius,
-                    border: Border.all(color: SenseTappable.focusRingColor, width: 2.5),
+                    border: Border.all(
+                        color: widget.focusColor ?? SenseTappable.focusRingColor, width: 2.5),
                   )
                 : null,
             child: visual,
