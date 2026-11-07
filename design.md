@@ -83,7 +83,7 @@ Use semantic colours sparingly and consistently. They are functional indicators,
 |---|---|---|
 | `color-text-primary` | `#082B52` | Primary text on light backgrounds |
 | `color-text-secondary` | `#496784` | Supporting text and labels |
-| `color-text-muted` | `#607B93` | Captions, timestamps and low-priority metadata |
+| `color-text-muted` | `#587187` | Captions, timestamps and low-priority metadata. *(Changed 2026-11-07 from `#607B93`, which gave only 4.0:1 on the background; now 4.6:1 on background, 5.1:1 on white.)* |
 | `color-border` | `#D6E7F2` | Subtle separators and outlines |
 | `color-success` | `#087F6E` | Positive/complete state |
 | `color-warning` | `#9A5B00` | Caution or elevated indicator |
@@ -98,11 +98,23 @@ Use semantic colours sparingly and consistently. They are functional indicators,
 - Do not make “high stress” red by default. Use neutral language and reserve danger styling for actual safety or system error states.
 - Validate colour contrast for text, icons, borders and focus states. If a pairing fails WCAG 2.2 AA contrast, adjust the pairing rather than weakening the requirement.
 
+### Accessible text variants (added 2026-11-07)
+
+The brand palette is unchanged. Electric Blue `#059BE0` gives only 3.1:1 against white (2.8:1 against the background), so it is used for **non-text** elements (icons, chart series, focus rings, selected indicators, ≥ 3:1) and **not for small text**. Contrast ratios are verified in `mobile/test/accessibility_and_honesty_test.dart`.
+
+| Token (code) | Value | Use | Contrast |
+|---|---|---|---|
+| `textAccent` | `#02549B` (Ocean Blue) | Small links, active navigation labels, text buttons | 7.6:1 on white, 6.9:1 on background |
+| `blue700` | `#047CB3` | Light end of the primary **button** gradient (white label) | white text 4.6:1 |
+| `blue600` | `#059BE0` (Electric Blue) | Icons, charts, focus, indicators — **not small text** | 3.1:1 on white (non-text) |
+| `textMuted` | `#587187` | Captions and metadata | ≥ 4.6:1 on all light surfaces |
+
 ### Gradients
 
 Use gradients selectively, mainly for primary actions or a single key summary panel.
 
-- Primary action: `#059BE0` to `#02549B`.
+- Primary **button** (white label): `#047CB3` to `#02549B` (every point ≥ 4.5:1 with white text).
+- Primary action, icon-only/decorative (logo mark, mic, centre "+"): `#059BE0` to `#02549B`.
 - Optional highlight: `#07CCFC` to `#059BE0`.
 - Avoid placing long text over gradients.
 - Avoid using a gradient on every card, button and navigation item.

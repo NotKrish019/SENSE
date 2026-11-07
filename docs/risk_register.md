@@ -1,4 +1,6 @@
-# MindPulse (SENSE) — Comprehensive Risk Register
+# SENSE — Comprehensive Risk Register
+
+*Formerly titled "MindPulse (SENSE)"; MindPulse was the project's former working name.*
 ## Multi-Category Project Risk & Mitigation Matrix
 
 This document identifies, analyzes, and establishes mitigation controls for risks spanning technical, scientific, privacy, ethical, clinical safety, and operational domains.
@@ -31,6 +33,8 @@ This document identifies, analyzes, and establishes mitigation controls for risk
 | **CR-01** | Clinical/Safety | User in acute suicidal or psychiatric crisis misinterprets non-clinical app insights as medical evaluation. | 2 | 4 | 8 | High | Prominently displayed non-clinical disclaimers; dedicated, permanent, one-tap Emergency Support Panel with verified national hotlines (KIRAN, Tele-MANAS); keyword trigger in journal alerting user to human care resources. | 2 | Clinical Safety Advisor |
 | **CR-02** | Clinical/Safety | "Nocebo" effect: Over-alerting users to minor stress fluctuations, inadvertently inducing anxiety or distress. | 2 | 3 | 6 | Moderate | Calibrate alert thresholds conservatively ($>2.0\sigma$ deviation over $>3$ consecutive days); frame all insights in supportive, non-alarmist, psychoeducational language. | 2 | UX & Ethics Researcher |
 | **OR-01** | Operational | Low participant retention and high attrition over longitudinal multi-week tracking. | 3 | 3 | 9 | High | Design check-in interactions to require $<30$ seconds; provide immediate intrinsic value via visual trend reflection; avoid gamification gimmicks that induce burnout. | 4 | Project Planner |
+| **TR-03** | Technical / Integrity | *(Added 2026-11-07)* Prototype UI text claims capabilities that do not exist (on-device encryption, saved/exported/erased data, computed baselines, numeric stress attributions), misleading testers, reviewers or future participants. Found in both the Flutter app and the frozen Expo app. | 3 | 3 | 9 | High | Correct Flutter copy before any demo; label all hard-coded values as sample data; claim a capability only once it is implemented and verified; freeze Expo and never present it as the current product (ADR-001 amendment). *Status 2026-11-07: Flutter copy corrected and centralised in `prototype_copy.dart`; frozen Expo copy still contains the original claims.* | 2 | Mobile Engineer |
+| **TR-04** | Technical | *(Added 2026-11-07)* Development preview limited to Flutter Web in Chrome (no Android Studio / USB available); web masks native issues (touch, permissions, `sqflite`, fonts, performance). | 3 | 2 | 6 | Moderate | Treat Chrome preview as UI review only; plan native Android verification via SDK command-line tools + emulator or Android 11+ wireless debugging before any MVP sign-off. | 2 | Mobile Engineer |
 
 ---
 

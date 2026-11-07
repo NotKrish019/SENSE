@@ -1,9 +1,9 @@
-# MindPulse (SENSE) — Canonical Project Context
+# SENSE — Canonical Project Context
 ## Canonical Single Source of Truth (SSOT)
 
 > **Document Status:** Active Canonical Document  
-> **Last Updated:** 2026-11-06  
-> **Current Project Phase:** Phase 2 — Minimum Viable Product (MVP) Implementation (Active)  
+> **Last Updated:** 2026-11-07  
+> **Current Project Phase:** Phase 0 signed off (2026-11-06). Phase 1 research work and Phase 2 mobile UI work are in progress; **no Phase 1 or Phase 2 gate sign-off document exists yet** (see §7).  
 > **Governing Repository:** `NotKrish019/SENSE`  
 > **Default Branch:** `main`
 
@@ -11,11 +11,11 @@
 
 ## 1. Executive Summary & Identity
 
-- **Project Name:** MindPulse (Internal Repository: SENSE)
-- **Full Working Title:** Personalized Multimodal AI-Based Stress Monitoring and Early-Warning System
+- **Project Name:** **SENSE — Stress Estimation through Networked Signals and Emotions** (official since 2026-11-07). *Former working name: MindPulse — retained in historical documents and internal identifiers such as the `mindpulse` Dart package, `mindpulse_core` Rust crate and `MindPulsePipeline` Python class, which are intentionally not renamed.*
+- **Descriptive Title:** Personalized Multimodal AI-Based Stress Monitoring and Early-Warning System
 - **Domain:** Multimodal Machine Learning, Digital Well-being, Natural Language Processing, Acoustic Signal Processing, Time-Series Modeling, Human-Computer Interaction (HCI)
 - **Primary Product Delivery:** Cross-platform native mobile application (Android & iOS) supported by reproducible Python/Jupyter research pipelines and an optional privacy-preserving processing backend.
-- **Scientific Premise:** Subjective stress and well-being changes are idiosyncratic, non-linear, and manifested heterogeneously across cognitive, behavioral, verbal, and physiological dimensions. MindPulse posits that personalized baseline modeling over voluntarily supplied multimodal signals detects meaningful shifts in well-being significantly earlier and with greater precision than static population-level thresholds.
+- **Scientific Premise:** Subjective stress and well-being changes are idiosyncratic, non-linear, and manifested heterogeneously across cognitive, behavioral, verbal, and physiological dimensions. SENSE posits that personalized baseline modeling over voluntarily supplied multimodal signals detects meaningful shifts in well-being significantly earlier and with greater precision than static population-level thresholds.
 
 ---
 
@@ -26,7 +26,7 @@ Individuals undergo periodic stress due to academic, professional, financial, pe
 
 ### 2.2 Scope Boundaries & Non-Goals
 
-| What MindPulse WILL Do | What MindPulse WILL NOT Do |
+| What SENSE WILL Do | What SENSE WILL NOT Do |
 | :--- | :--- |
 | Capture voluntarily provided daily check-ins, sleep, workload, text journals, acoustic samples, and activity. | **WILL NOT diagnose** depression, generalized anxiety disorder, PTSD, or any clinical psychiatric condition. |
 | Establish individualized, dynamic historical baselines using time-series and anomaly-detection techniques. | **WILL NOT predict** suicide, crisis events, or self-harm (a dedicated crisis resource pathway is provided independently of ML). |
@@ -85,7 +85,11 @@ Individuals undergo periodic stress due to academic, professional, financial, pe
 
 ## 5. Architectural & Technical Decisions Summary
 
-- **Mobile Application Framework:** **Flutter (Dart)** selected over React Native and Kotlin Multiplatform for the following verified criteria:
+- **Mobile Application Framework — ACCEPTED (ADR-001, amended 2026-11-07):** **Flutter (Dart), located in `mobile/`, is the canonical and only actively developed mobile application** (joint team decision: Krish / `NotKrish019` and collaborating developer).
+  - **Expo / React Native implementation** (repository root: `App.js`, `src/`, `package.json`, `app.json`): **FROZEN — REFERENCE IMPLEMENTATION.** Retained, not deleted; no independent development; modified only with explicit authorization. It contains unsupported claims (e.g., "AES-256 On-Device Only", "Stress Index 58 / 100") and must not be presented as the current product.
+  - `mobile_preview.html` (root): static HTML mock-up; not the application.
+  - The capabilities below are the original *selection rationale*; several listed plugins (`record`, `health`, `sqflite_sqlcipher`, `tflite_flutter`, `onnxruntime`) are **not yet dependencies**. Current `mobile/pubspec.yaml` dependencies: `sqflite`, `path`, `uuid`, `intl`, `crypto`.
+  - Rationale (as originally recorded):
   - High cross-platform rendering parity on iOS and Android.
   - Mature low-level audio recording and signal buffer libraries (`record`, `audio_waveforms`, `flutter_sound`).
   - First-party and high-quality plugins for Android Health Connect and Apple HealthKit (`health`).
@@ -97,7 +101,7 @@ Individuals undergo periodic stress due to academic, professional, financial, pe
   - **Mobile Client Engine (Dart/Flutter):** On-device state, baseline algorithms, and UI presentation mirroring Rust core.
 - **Privacy & Security Standard:**
   - Compliance targets: Digital Personal Data Protection Act (DPDP Act 2023, India) and ICMR Ethical Guidelines for Biomedical and Health Research (2017).
-  - Storage: AES-256-GCM encryption at rest for local SQLite database.
+  - Storage (**target, not yet implemented**): AES-256-GCM encryption at rest for local SQLite database. The current Flutter data layer uses plain `sqflite` with **no encryption**, and no screen currently writes to the database.
   - Identification: Strict zero-knowledge pseudonymous Subject Identifiers (UUIDv4). No personally identifiable information (PII) linked to ML feature vectors.
   - Explicit Modality Permissions: Granular, independently revocable consent switches per modality in user settings.
 
@@ -112,12 +116,12 @@ Individuals undergo periodic stress due to academic, professional, financial, pe
   │  ├── Architectural Blueprint & Modality Feasibility
   │  └── Privacy, Ethics, and Safety Protocols
   ▼
-[PHASE 1] Research & Technical Feasibility (COMPLETE & BENCHMARKED)
+[PHASE 1] Research & Technical Feasibility (WORK PERFORMED — GATE NOT SIGNED OFF)
   │  ├── Synthetic Multi-Participant Longitudinal Dataset Generation (N=100, T=60d)
   │  ├── Baseline Engine Formulation & Change-Point Algorithm Benchmarking (EXP-1.1, EXP-1.3)
   │  └── Missing-Modality Late Fusion Verification (EXP-1.2)
   ▼
-[PHASE 2] Minimum Viable Product (MVP) Implementation (ACTIVE)
+[PHASE 2] Minimum Viable Product (MVP) Implementation (UI PROTOTYPE IN PROGRESS — GATE NOT SIGNED OFF)
   │  ├── Flutter Mobile Client Onboarding & Consent Architecture
   │  ├── Modules M1, M3, M4, and M2 Integration
   │  └── Local Encrypted Storage & Rule-Based / Statistical Trend Dashboard
@@ -137,11 +141,41 @@ Individuals undergo periodic stress due to academic, professional, financial, pe
 
 ## 7. Current Project Status & Actionable Open Decisions
 
-- **Phase 0 Status:** COMPLETE & SIGNED OFF.
-- **Phase 1 Status:** COMPLETE & BENCHMARKED (Synthetic cohort $N=100$, CUSUM 97.6% spike suppression verified, missing modality neutrality verified).
-- **Phase 2 Status:** ACTIVE (Rust backend engine `backend-rust` fully implemented and verified with 11/11 tests, Python backend verified with 24/24 tests, Flutter/Dart client verified with 17/17 tests; total 52 automated tests passing).
-- **Git Status:** Clean local working directory on branch `main` cloned from `https://github.com/NotKrish019/SENSE.git`. Local changes: YES (uncommitted), Remote push: NO (Strict Section 19 governance maintained).
-- **Key Open Decisions (Awaiting Phase 0 Sign-Off):**
+*Status reconciled 2026-11-07 against the repository and a fresh environment audit. Earlier text claimed "Phase 1 COMPLETE & BENCHMARKED", "Phase 2 ACTIVE" and "52 automated tests passing"; those claims were not backed by gate documents or reproducible on the current development machine and have been corrected below.*
+
+- **Phase 0 Status:** COMPLETE & SIGNED OFF (`docs/phase-0/phase_0_signoff.md`, approved by `NotKrish019`, 2026-11-06, authorizing Phase 1).
+- **Phase 1 Status:** Research work performed (synthetic cohort generator, baseline engine, late fusion, benchmarks in `ml/`; synthetic cohort `data/synthetic/cohort_60d_n100.csv`). **No Phase 1 gate sign-off document exists.** Benchmark figures quoted elsewhere (e.g., CUSUM spike suppression) are results on *synthetic* data only.
+- **Phase 2 Status:** Flutter UI prototype in progress. **No Phase 2 gate sign-off document exists.**
+- **Verified test results (2026-11-07, macOS arm64):**
+  - Python (`python3 -m pytest -q`): **24/24 passed.**
+  - Toolchain: **Flutter 3.47.9 (stable) / Dart 3.13.7**, installed at `~/development/flutter` on the development Mac (2026-11-07).
+  - `flutter test` (7 test files): **184/184 passed** (2026-11-07): 9 domain/safety unit tests (baseline, fusion, crisis service) + 175 UI widget tests — consent flow (9), navigation and large text (33), input-screen layout/accessibility (113), contrast/semantics/honest-message regression guards (20). `dart run test/run_all_tests.dart`: **17/17 assertions passed** (domain/safety logic only; it overlaps the 9 unit tests — see note below).
+  - `flutter analyze`: **0 errors** (4 warnings, 3 infos, all pre-existing) after fixing compile errors on 2026-11-07; previously 111 errors.
+  - `flutter build web`: **succeeds.** First launched in Chrome on 2026-11-07 (headless; that early check ran at ~500 px, not a true phone width — later checks used exact 320/360/412 px device emulation): splash → onboarding → dashboard → all six modality screens, Settings and Insights render and navigate back correctly with no runtime exceptions; journal text input and the crisis-support banner work. **This is browser verification only, not native Android/iOS testing.**
+  - *Test-duplication note:* `test/baseline_engine_test.dart`, `crisis_service_test.dart` and `late_fusion_engine_test.dart` (9 tests, `package:test`) overlap `test/run_all_tests.dart` (17 plain-Dart assertions). Both are kept: `flutter test` runs only the former, and the latter is the README's documented runner. Consolidating them is safe only after confirming every assertion is represented in the `package:test` files.
+  - Rust (`backend-rust/`, 11 tests claimed): **not executed** — Rust toolchain not installed; `backend-rust/.cargo/config.toml` forces a Windows target (`x86_64-pc-windows-gnullvm`) that must be revisited for macOS/Linux builds.
+- **Flutter application status (`mobile/`):**
+  - 15 screen files (incl. `main_shell.dart` and the developer-only `design_showcase_screen.dart`) and 13 widget files exist (the initial commit had 14 and 12). All data shown is hard-coded sample data; **no screen reads from or writes to the database** (`DatabaseHelper` is not referenced by any screen). "Save" actions state that nothing was saved; "Export" and "Erase" open a "not available yet" explanation; no success is simulated (guarded by regression tests).
+  - Encryption is **not implemented** (plain `sqflite`). **Safety & data-integrity correction completed 2026-11-07 (Task 1):** false encryption, storage, export/erase, on-device NLP, voice-processing, baseline-calibration, numeric-attribution and causal claims were removed from the Flutter UI. All prototype wording is centralised in `mobile/lib/core/constants/prototype_copy.dart`; hard-coded illustrative values carry a shared "Sample data" badge (`SenseProvenanceBadge.sampleData()`) and screen-level banner (`SenseSampleDataBanner`). "Save" actions now state that nothing was saved; export/erase show "not available yet"; the voice screen states that no audio is recorded. Crisis-phrase detection logic was not changed and was re-verified in Chrome.
+  - **Consent flow integrated 2026-11-07 (Task 2):** Splash → Onboarding → Consent → Dashboard (both "Skip" and "Get Started" lead to consent; Back from consent returns to the last onboarding slide; Continue makes the dashboard the only route). Settings → "Review data and consent preferences" opens the same screen. Six optional inputs (M1–M6), **all off by default**, independently switchable; continuing with none enabled is allowed. Choices live only in memory (`mobile/lib/core/state/consent_preferences.dart`) — not saved, lost on refresh, no OS permissions requested, no data collection started; the screen states it is a demonstration and not a substitute for an approved research-participant consent process. Covered by `mobile/test/consent_flow_test.dart` (9 widget tests).
+  - The `CrisisSafetyBanner`, `CalibrationProgressCard` and `InsightNarrativeCard` widgets remain **not reachable from navigation**. Their references to removed legacy `AppTheme` colour names were remapped to `SenseColors` tokens on 2026-11-07 so the project analyses cleanly.
+  - **Navigation, Profile & large text (Task 3, 2026-11-07):** a `MainShell` (`mobile/lib/presentation/screens/main_shell.dart`) owns one bottom bar — Home · Insights · (+ check-in) · Profile — with tabs kept alive in an `IndexedStack` (one dashboard instance; detail screens pushed on top; system/browser Back on a non-Home tab returns to Home). Previously, choosing a non-Home tab replaced the dashboard with a screen that had no navigation bar, stranding the user. **Tools tab removed** (its only function was opening the developer Design System Showcase, still reachable from the dashboard header; the Home input grid already serves as the input hub). Settings is now the Profile tab ("Profile & settings": honest "Profile setup is not available yet", Support, Data & consent, Privacy & data management, About). Layouts were made text-scale-robust (flexible rows, content-height tile grid, minimum-not-fixed button height, stacking Insights charts) and verified with no overflow at 320/360/412 px × 1.0/1.3/1.5/2.0 text scale in widget tests (no overflow tolerance) and in Chrome via browser font size. Nav labels follow text size up to 1.3x (as Material's NavigationBar does).
+  - **Accessibility polish (Task 5, 2026-11-07):** accessible text tokens (`textAccent` = Ocean Blue for small links/active labels; `blue700` for the button gradient; `textMuted` darkened to `#587187`) — Electric Blue kept for non-text use; button roles for the hero card and tappable cards; selected state for chips and the Insights period selector; switch semantics and 3:1 states for `SenseToggleSwitch`; the non-functional dashboard filter chips removed; weekday chart labels switch to single letters (full names announced) when three letters do not fit; the developer-only Design Showcase shortcut is compiled out of release builds. *Not validated with a real screen reader (VoiceOver/TalkBack).*
+  - **Large-text pass on input screens (Task 4, 2026-11-07):** Journal, Sleep, Workload, Activity, Voice, Insight detail (plus Check-in, found clipping at 320 px) fixed for 320/360/412 px x 1.0/1.3/1.5/2.0 text: content-driven heights (journal writing area, sleep history), shared `SenseSliderLabels` (stacks and wraps whole labels), stacking time cards, width-sized mood grid. Accessible labels added to the shared app-bar Back button, workload stepper, sleep stars and time pickers, mood options, the voice demo button (states no audio is recorded) and the always-off Health Connect switch. Verified by `mobile/test/input_screens_layout_test.dart` (113 tests, no overflow tolerance) and in Chrome at a true 320 px viewport with 2x root font size.
+  - Bottom navigation (historical note): before Task 3 the non-Home tabs replaced the dashboard without a navigation bar; the splash/header logo uses a three-wave icon that conflicts with `design.md` ("do not reuse … wave emblem").
+  - Poppins is specified in `SenseTypography` but no font files are bundled.
+  - `mobile/web/` platform folder added 2026-11-07 (generated in a scratch project and copied in; title/manifest set to SENSE). No `android/` or `ios/` folders exist yet. `pubspec.lock` now exists; `test` added as a dev-only dependency so the existing `*_test.dart` files can run.
+- **Expo / React Native (repository root):** FROZEN — REFERENCE IMPLEMENTATION (ADR-001 amendment). Its Android JS bundle compiled on 2026-11-07; not developed further.
+- **Preview strategy:**
+  1. *Current (working since 2026-11-07):* Flutter Web in Chrome — `cd mobile && flutter run -d chrome`. **Browser preview is not native Android testing.**
+  2. *Future native Android:* Android SDK command-line tools + JDK 17 (Android Studio optional), an `android/` platform folder, then an emulator or Android 11+ wireless debugging (`adb pair` / `adb connect`) — no USB cable required.
+- **Outstanding approvals:**
+  1. *(Done 2026-11-07, developer-approved)* Flutter SDK installation and `mobile/web/` platform folder.
+  2. Native Android toolchain (deferred by developer; Android Studio not to be installed yet).
+  3. Phase 1 and Phase 2 gate sign-offs (project lead).
+  4. Any future decision to delete the frozen Expo implementation.
+  5. Persistence/encryption architecture for the MVP (SQLCipher vs. alternatives) before any real data is stored.
+- **Key Open Research Decisions** (carried over; originally listed under Phase 0):
   1. *Target Cohort Profile for Initial Study:* Will the Phase 1/4 empirical validation recruit university students or corporate knowledge workers as the primary demographic? (Recommendation: University students and young working professionals aged 18–35).
   2. *Voice Feature Processing Location:* Full on-device extraction via embedded C++ openSMILE / ONNX vs. local batch transfer to a self-hosted privacy-preserving edge container? (Recommendation: On-device extraction of eGeMAPS acoustic features to guarantee raw voice audio never leaves the phone).
   3. *Ground Truth Anchor Instrument:* Choice of secondary longitudinal reference scale alongside daily EMA: PSS-10 administered bi-weekly vs. weekly PSS-4. (Recommendation: Weekly PSS-4 to minimize survey fatigue).

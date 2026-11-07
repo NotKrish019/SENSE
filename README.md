@@ -1,7 +1,9 @@
-# MindPulse (SENSE)
-## Personalized Multimodal AI-Based Stress Monitoring and Early-Warning System
+# SENSE
+## Stress Estimation through Networked Signals and Emotions
 
-[![Project Phase](https://img.shields.io/badge/Phase-0%3A%20Foundation%20%26%20Scope-blue.svg)](#project-lifecycle--phases)
+*Personalized multimodal AI-based stress monitoring and early-warning research system. Formerly known by the working name "MindPulse".*
+
+[![Project Phase](https://img.shields.io/badge/Phase-0%20signed%20off%20%7C%20UI%20prototype-blue.svg)](#project-lifecycle--phases)
 [![Domain](https://img.shields.io/badge/Domain-Digital%20Wellbeing%20%7C%20Multimodal%20ML-purple.svg)](#project-identity)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green.svg)](#primary-platforms)
 [![License](https://img.shields.io/badge/Governance-Research%20Only-orange.svg)](#governance--ethics)
@@ -10,9 +12,9 @@
 
 ## 1. Project Identity
 
-- **Project Name:** MindPulse
+- **Project Name:** SENSE — Stress Estimation through Networked Signals and Emotions (former working name: MindPulse, still used in some internal identifiers)
 - **Repository Name:** SENSE (`NotKrish019/SENSE`)
-- **Working Full Title:** Personalized Multimodal AI-Based Stress Monitoring and Early-Warning System
+- **Descriptive Title:** Personalized Multimodal AI-Based Stress Monitoring and Early-Warning System
 - **Core Category:** Artificial Intelligence, Multimodal Machine Learning, Digital Well-being, Natural Language Processing, Time-Series Analysis, Explainable AI (XAI), Mobile Computing
 - **Project Ambition:** Scientifically grounded, research-driven digital well-being platform yielding an experimentally evaluated multimodal ML framework and a production-grade cross-platform mobile application.
 
@@ -29,7 +31,7 @@ Individuals encounter stress stemming from diverse personal, academic, vocationa
 1. **Within-Person Baseline Modeling:** Stress is physiologically and psychologically idiosyncratic. Population-wide fixed thresholds yield unacceptable false-alarm rates; detection must be calibrated against an individual's personal historical baseline.
 2. **Longitudinal Temporal Analysis:** Transient single-day stress spikes (e.g., prior to an exam) differ fundamentally from sustained multi-week deviations. Time-series analysis must capture baseline drift, trend persistence, and recovery dynamics.
 3. **Multimodal Information Fusion:** Multimodal inputs must provide quantifiable incremental value over structured self-reports alone. If a modality does not improve estimation, it must be pruned.
-4. **Non-Clinical Boundary:** MindPulse monitors lifestyle well-being patterns. It **does not diagnose, treat, or predict clinical psychiatric conditions (such as Major Depressive Disorder, Generalized Anxiety Disorder, or Bipolar Disorder), nor does it predict self-harm or suicide.**
+4. **Non-Clinical Boundary:** SENSE monitors lifestyle well-being patterns. It **does not diagnose, treat, or predict clinical psychiatric conditions (such as Major Depressive Disorder, Generalized Anxiety Disorder, or Bipolar Disorder), nor does it predict self-harm or suicide.**
 
 ---
 
@@ -102,9 +104,9 @@ SENSE/
 
 ## 6. Project Lifecycle & Phases
 
-1. **Phase 0 — Foundation & Scope Definition (CURRENT):** Literature review, formal mathematical formulation, privacy & ethics governance, technology stack trade-offs, architecture blueprints, and MVP boundary definition. Major app development and model training are prohibited during this phase.
-2. **Phase 1 — Research & Technical Feasibility:** Synthetic dataset generation, pipeline benchmarking, statistical baseline formulation, and verification of modality integration algorithms.
-3. **Phase 2 — MVP Implementation:** Mobile core development (Flutter), local encrypted database, onboarding, structured check-ins (M1), sleep (M3), workload (M4), optional journal (M2), personal baseline engine, and supportive non-clinical insights.
+1. **Phase 0 — Foundation & Scope Definition (SIGNED OFF 2026-11-06):** Literature review, formal mathematical formulation, privacy & ethics governance, technology stack trade-offs, architecture blueprints, and MVP boundary definition. Major app development and model training are prohibited during this phase.
+2. **Phase 1 — Research & Technical Feasibility (work performed on synthetic data; gate not yet signed off):** Synthetic dataset generation, pipeline benchmarking, statistical baseline formulation, and verification of modality integration algorithms.
+3. **Phase 2 — MVP Implementation (Flutter UI prototype in progress; gate not yet signed off):** Mobile core development (Flutter), local encrypted database (planned; not yet implemented), onboarding, structured check-ins (M1), sleep (M3), workload (M4), optional journal (M2), personal baseline engine, and supportive non-clinical insights.
 4. **Phase 3 — Advanced AI Research:** Integration of privacy-preserving acoustic feature extraction (M5), physical activity analytics (M6), multimodal fusion, and uncertainty-aware explainable AI (XAI).
 5. **Phase 4 — Empirical Validation:** Longitudinal user studies, within-person metric evaluations, usability assessments, and research publication preparation.
 
@@ -112,29 +114,46 @@ SENSE/
 
 ## 7. Running the Project
 
-### Mobile Application (Expo / React Native)
-To test and interact with the SENSE mobile app on your physical mobile phone via Expo Go:
-```bash
-# Start the Expo Metro Bundler
-npx expo start
-```
-- **Android:** Scan the terminal QR code with the **Expo Go** app.
-- **iOS:** Scan the terminal QR code using the default **Camera** app.
+> See `docs/context.md` §7 for the current, verified implementation status.
 
-### Interactive Browser Prototype
-For immediate desktop preview without a mobile device:
-- Open `mobile_preview.html` in any modern web browser.
+### Mobile Application — Flutter (canonical, `mobile/`)
+The Flutter app in `mobile/` is the **only actively developed mobile application** (ADR-001, accepted 2026-11-07). It is currently a **UI prototype using hard-coded sample data**: nothing is saved, encrypted or analysed yet.
+
+Requirements: [Flutter SDK](https://docs.flutter.dev/get-started/install), stable channel, and Google Chrome. Android Studio is **not** required for the browser preview.
+- **Verified development version:** Flutter 3.47.9 / Dart 3.13.7 (2026-11-07). This is the version the current results were obtained with, not a hard requirement; however, the committed `pubspec.lock` was resolved with it and requires Flutter ≥ 3.44 / Dart ≥ 3.13.
+
+```bash
+cd mobile
+flutter pub get
+flutter devices                          # "Chrome (web)" should be listed
+flutter run -d chrome --web-port 8765    # live preview at http://localhost:8765
+```
+While it runs: press `r` (hot reload) or `R` (hot restart) after code changes, `q` to stop. The developer-only Design Showcase shortcut appears in debug runs only (hidden in release builds).
+
+> **Status (verified 2026-11-07):** web support (`mobile/web/`) is enabled; the app builds for web and launches in Chrome. Chrome preview is **not** equivalent to testing on a native Android or iOS device; `android/` and `ios/` platform folders do not exist yet.
+
+Other useful commands (run inside `mobile/`):
+```bash
+flutter analyze                   # static analysis (0 errors at last check)
+flutter test                      # 184 widget + unit tests
+dart run test/run_all_tests.dart  # plain-Dart assertion runner (17 assertions)
+flutter build web                 # production web build into mobile/build/web
+```
+
+### Frozen reference implementation — Expo / React Native (repository root)
+`App.js`, `src/`, `package.json` and `app.json` contain an earlier Expo implementation. It is **FROZEN — REFERENCE ONLY**: retained for reference, not developed further, and it contains outdated, unsupported claims (e.g., encryption). Do not use it as the current product. If you need to inspect it: `npm ci && npx expo start`, then scan the QR code with Expo Go.
+
+`mobile_preview.html` is a static HTML mock-up, not the application.
 
 ### Verification & Automated Tests
-Execute the comprehensive test suites across the stack (52 automated tests):
 ```bash
-# Dart Mobile Test Suite (17 tests)
-dart run mobile/test/run_all_tests.dart
+# Python research pipeline (24 tests — verified passing 2026-11-07)
+python3 -m pytest -q
 
-# Python Research Pipeline Test Suite (24 tests)
-python -m pytest -q
+# Dart / Flutter (verified 2026-11-07: flutter test 184/184 passed; run_all_tests.dart 17/17 assertions passed)
+cd mobile && flutter test && dart run test/run_all_tests.dart
 
-# Rust Backend Engine Test Suite (11 tests)
+# Rust backend (11 tests — not yet verified; .cargo/config.toml currently forces a Windows target)
 cargo test --manifest-path backend-rust/Cargo.toml
 ```
 

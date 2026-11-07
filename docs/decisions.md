@@ -1,6 +1,8 @@
 # MindPulse (SENSE) — Architecture & Research Decision Records (ADR)
 ## Formal Decision Log
 
+> **Naming note (2026-11-07):** The official product name is **SENSE — Stress Estimation through Networked Signals and Emotions**. "MindPulse" is the former working name; it is retained below in historical decision text and in internal technical identifiers (e.g., `mindpulse` Dart package, `mindpulse_core` Rust crate).
+
 This document records the foundational research, architectural, and governance decisions made for the MindPulse project. Every decision documents the context, alternatives considered, justification, and implications.
 
 ---
@@ -19,8 +21,8 @@ This document records the foundational research, architectural, and governance d
 ---
 
 ### ADR-001: Selection of Flutter as the Cross-Platform Mobile Framework
-- **Status:** Proposed (Recommended for Phase 0 Approval)
-- **Date:** 2026-11-06
+- **Status:** Accepted — joint team decision by Krish (`NotKrish019`, project lead) and the collaborating developer, recorded 2026-11-07. *(Previously: "Proposed (Recommended for Phase 0 Approval)", 2026-11-06.)*
+- **Date:** 2026-11-06 (proposed) · 2026-11-07 (accepted; see amendment below)
 - **Context:** MindPulse requires a cross-platform mobile client for Android and iOS that supports smooth UI rendering, precise audio recording, health platform integration (Android Health Connect / iOS HealthKit), encrypted local storage (SQLCipher), and lightweight on-device ML model execution.
 - **Alternatives Considered:**
   1. *React Native:* Strong ecosystem, but native bridging overhead for audio buffer processing and frequent breaking changes between New Architecture (Fabric/TurboModules) and community health libraries introduce stability risks.
@@ -32,6 +34,25 @@ This document records the foundational research, architectural, and governance d
   - Single unified codebase for UI, local business logic, and data storage.
   - Efficient access to OS audio recording and health APIs via validated community plugins.
   - Requires compiling native C/C++ libraries if custom feature extraction binaries (e.g., custom openSMILE bindings) are integrated on-device.
+
+#### ADR-001 Amendment (2026-11-07): Acceptance, single active mobile app, Expo frozen
+- **Context:** The 2026-11-06 Phase 0 sign-off (exit criterion 12) treated Flutter as selected, while this ADR still read "Proposed". In parallel, an Expo / React Native implementation (`App.js`, `src/`, `package.json`, `app.json` at the repository root) had been committed alongside the Flutter implementation in `mobile/`, and the README directed developers to run Expo. Two competing mobile apps existed.
+- **Decision:**
+  1. **Flutter (`mobile/`) is the canonical and only actively developed mobile application.**
+  2. **The Expo / React Native implementation is FROZEN — REFERENCE IMPLEMENTATION.** It is retained in the repository, not deleted, and receives no independent feature development. Its files are modified only with explicit authorization. Useful ideas may be consulted for reference but are not copied or migrated automatically in either direction.
+- **Why Flutter (in addition to the original reasoning above):**
+  - Consistent with this ADR, the Phase 0 sign-off and `docs/phase-0/technical_feasibility.md` (weighted score 4.63 vs. React Native 3.45 vs. KMP 3.60).
+  - The Flutter implementation is the more complete code base: shared design tokens (`mobile/lib/core/theme/`), reusable widgets (`mobile/lib/presentation/widgets/`), SQLite data layer, and on-device baseline, late-fusion and crisis-safety logic with Dart tests.
+- **Alternatives considered at acceptance:**
+  1. *Adopt Expo as canonical:* fastest phone preview today (Expo Go over Wi-Fi), but contradicts the signed-off architecture, lacks shared UI components and on-device engines. Rejected.
+  2. *Maintain both apps:* rejected — duplicated effort, divergent UI and safety copy, ambiguous source of truth.
+  3. *Delete Expo:* rejected for now — it holds reference ideas (e.g., Log hub screen) and deletion is irreversible; may be revisited as a separate decision.
+- **Consequences:**
+  - All new mobile UI work happens in `mobile/` only; the README points developers to Flutter.
+  - The immediate preview path changes from Expo Go to Flutter Web in Chrome, which requires installing the Flutter SDK and adding web platform files. **Chrome preview is not equivalent to native Android testing.** Native Android/iOS testing additionally requires Android SDK tooling / Xcode and the `android/` / `ios/` platform folders, which do not yet exist.
+  - Misleading copy found in the frozen Expo UI (unsupported encryption claims, invented scores) remains there unless a fix is explicitly authorized; the frozen app must not be presented to participants or reviewers as the current product.
+  - Statements in this ADR describing plugins (`record`, `health`, `sqflite_sqlcipher`, `onnxruntime`) describe intended capabilities; none of these are dependencies yet (`mobile/pubspec.yaml` currently uses plain `sqflite`, which provides **no encryption**).
+- **Approval:** Accepted by joint team decision (Krish / `NotKrish019` and collaborating developer), 2026-11-07, as communicated to Claude Code by the collaborating developer.
 
 ---
 
