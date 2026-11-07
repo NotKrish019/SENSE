@@ -86,15 +86,18 @@ class _SenseButtonState extends State<SenseButton> {
       }
 
       children.add(
-        Text(
+        Flexible(
+          child: Text(
           widget.label,
+          textAlign: TextAlign.center,
           style: widget.variant == SenseButtonVariant.primary
               ? SenseTypography.buttonLabel
               : widget.variant == SenseButtonVariant.outline
                   ? SenseTypography.buttonLabel.copyWith(color: SenseColors.blue800)
                   : widget.variant == SenseButtonVariant.text
-                      ? SenseTypography.buttonLabel.copyWith(color: SenseColors.blue600)
+                      ? SenseTypography.buttonLabel.copyWith(color: SenseColors.textAccent)
                       : SenseTypography.buttonLabel.copyWith(color: SenseColors.navy900),
+        ),
         ),
       );
 
@@ -123,7 +126,7 @@ class _SenseButtonState extends State<SenseButton> {
                   ? const LinearGradient(
                       colors: [Color(0xFF02549B), Color(0xFF012F5F)],
                     )
-                  : SenseColors.primaryActionGradient,
+                  : SenseColors.primaryButtonGradient,
           boxShadow: isDisabled || _isPressed ? [] : SenseShadows.card,
         );
         break;
@@ -132,7 +135,7 @@ class _SenseButtonState extends State<SenseButton> {
         decoration = BoxDecoration(
           color: isDisabled ? Colors.grey.shade200 : SenseColors.white,
           borderRadius: radius,
-          border: Border.Border.all(color: SenseColors.border, width: 1.2),
+          border: Border.all(color: SenseColors.border, width: 1.2),
           boxShadow: isDisabled || _isPressed ? [] : SenseShadows.card,
         );
         break;
@@ -141,7 +144,7 @@ class _SenseButtonState extends State<SenseButton> {
         decoration = BoxDecoration(
           color: _isPressed ? SenseColors.background : Colors.transparent,
           borderRadius: radius,
-          border: Border.Border.all(
+          border: Border.all(
             color: isDisabled ? Colors.grey.shade400 : SenseColors.blue600,
             width: 1.6,
           ),
@@ -158,8 +161,10 @@ class _SenseButtonState extends State<SenseButton> {
 
     Widget button = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
-      height: widget.height,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      // Minimum (not fixed) height so the button grows when text wraps at
+      // larger system text sizes.
+      constraints: BoxConstraints(minHeight: widget.height),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: decoration,
       alignment: Alignment.center,
       child: content,
@@ -169,13 +174,17 @@ class _SenseButtonState extends State<SenseButton> {
       button = SizedBox(width: double.infinity, child: button);
     }
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      enabled: !isDisabled,
+      child: GestureDetector(
       onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
       onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
       onTapCancel: isDisabled ? null : () => setState(() => _isPressed = false),
       onTap: widget.onPressed,
       behavior: HitTestBehavior.opaque,
       child: button,
+      ),
     );
   }
 }

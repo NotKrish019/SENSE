@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sample_data_banner.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
@@ -30,6 +31,14 @@ class _VoiceScreenState extends State<VoiceScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // The microphone is never used in this prototype: say so first.
+              const SenseSampleDataBanner(
+                title: 'Prototype — no audio is recorded',
+                message:
+                    'The microphone is not used. The button below only demonstrates '
+                    'the planned interface; nothing is recorded, analysed or saved.',
+              ),
+              const SizedBox(height: 16),
               // Research Rationale & Permission Card
               SenseCard(
                 color: SenseColors.surface,
@@ -40,18 +49,23 @@ class _VoiceScreenState extends State<VoiceScreen> {
                       children: [
                         const Icon(Icons.mic_none_rounded, color: SenseColors.blue600, size: 22),
                         const SizedBox(width: 10),
-                        Text(
-                          'Acoustic Prosody Analysis',
-                          style: SenseTypography.labelBold.copyWith(
-                            color: SenseColors.navy900,
-                            fontSize: 14,
+                        Expanded(
+                          child: Text(
+                            'Experimental voice features (planned)',
+                            style: SenseTypography.labelBold.copyWith(
+                              color: SenseColors.navy900,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Voice analysis investigates whether subtle variations in pitch variability, speaking rate, and pause duration correlate with stress shifts. Voice recording is 100% voluntary.',
+                      'SENSE plans to study whether experimental acoustic features, such as '
+                      'pitch variability, speaking rate and pause length, change alongside '
+                      'self-reported stress. They are research measures, not validated '
+                      'indicators of stress or emotion. Voice input is entirely optional.',
                       style: SenseTypography.caption.copyWith(
                         color: SenseColors.textSecondary,
                         height: 1.45,
@@ -67,24 +81,25 @@ class _VoiceScreenState extends State<VoiceScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.shield_outlined, color: SenseColors.success, size: 20),
+                    const Icon(Icons.shield_outlined, color: SenseColors.blue800, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Strict Privacy Guarantees',
+                            'Privacy design (planned)',
                             style: SenseTypography.labelBold.copyWith(
-                              color: SenseColors.success,
+                              color: SenseColors.navy900,
                               fontSize: 13,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '• NO background listening or ambient audio recording.\n'
-                            '• Tap-to-record only with your active consent.\n'
-                            '• Raw audio is converted on-device to irreversible mathematical features and deleted.',
+                            '• No background listening: recording would start only when you tap.\n'
+                            '• In this prototype the microphone is never used.\n'
+                            '• Planned, not yet built: audio would be converted on the device to '
+                            'acoustic features and the recording then deleted.',
                             style: SenseTypography.caption.copyWith(
                               color: SenseColors.textSecondary,
                               height: 1.4,
@@ -104,19 +119,26 @@ class _VoiceScreenState extends State<VoiceScreen> {
                   children: [
                     Text(
                       _isRecording
-                          ? 'Recording... 00:0$_recordingSeconds'
+                          ? 'Demo running — not recording (00:0$_recordingSeconds)'
                           : _hasSampleRecorded
-                              ? 'Sample Ready (20s)'
-                              : 'Tap microphone to begin prompt',
+                              ? 'Demo finished — no audio was recorded'
+                              : 'Tap to see the planned recording interface',
                       style: SenseTypography.labelBold.copyWith(
-                        color: _isRecording ? SenseColors.danger : SenseColors.navy900,
+                        color: _isRecording ? SenseColors.blue800 : SenseColors.navy900,
                         fontSize: 15,
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Mic Action Button
-                    GestureDetector(
+                    // Mic Action Button (icon-only, so it carries an explicit
+                    // label that also states no audio is recorded)
+                    Semantics(
+                      button: true,
+                      label: _isRecording
+                          ? 'Stop demo. No audio is being recorded.'
+                          : 'Start demo of the planned recording screen. No audio is recorded.',
+                      excludeSemantics: true,
+                      child: GestureDetector(
                       onTap: _toggleRecording,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
@@ -144,9 +166,10 @@ class _VoiceScreenState extends State<VoiceScreen> {
                         ),
                       ),
                     ),
+                    ),
                     const SizedBox(height: 24),
 
-                    // Simulated Waveform Bars
+                    // Decorative bars only (no audio input) — demo of the planned UI
                     if (_isRecording)
                       SizedBox(
                         height: 40,
@@ -174,21 +197,22 @@ class _VoiceScreenState extends State<VoiceScreen> {
               // Action Buttons
               if (_hasSampleRecorded) ...[
                 SenseButton(
-                  label: 'Save Acoustic Sample (On-Device)',
+                  label: 'Finish demo',
                   icon: Icons.check_rounded,
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Acoustic parameters extracted and stored locally.'),
+                        content: Text(
+                            'Demo only: no audio was recorded, no features were '
+                            'extracted, and nothing was saved.'),
                         backgroundColor: SenseColors.navy900,
                       ),
                     );
-                    Navigator.of(context).pop();
                   },
                 ),
                 const SizedBox(height: 12),
                 SenseButton(
-                  label: 'Discard Sample',
+                  label: 'Reset demo',
                   variant: SenseButtonVariant.secondary,
                   onPressed: () => setState(() {
                     _hasSampleRecorded = false;
@@ -228,7 +252,7 @@ class _VoiceScreenState extends State<VoiceScreen> {
         _recordingSeconds = 0;
         _hasSampleRecorded = false;
       });
-      // Simulate 5-second countdown in prototype
+      // Demo timer only: no microphone access, no audio captured.
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted && _isRecording) setState(() => _recordingSeconds = 1);
       });

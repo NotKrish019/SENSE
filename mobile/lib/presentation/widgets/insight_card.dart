@@ -25,10 +25,16 @@ class SenseInsightCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          SizedBox(
+            width: double.infinity, // lets spaceBetween reach the right edge
+            child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
                     width: 32,
@@ -45,7 +51,8 @@ class SenseInsightCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(
+                  Flexible(
+                    child: Text(
                     title,
                     style: SenseTypography.h3.copyWith(
                       fontSize: 16,
@@ -53,10 +60,12 @@ class SenseInsightCard extends StatelessWidget {
                       color: SenseColors.navy900,
                     ),
                   ),
+                  ),
                 ],
               ),
               SenseProvenanceBadge(text: provenance),
             ],
+          ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -70,11 +79,13 @@ class SenseInsightCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Text(
-                  'View observation details',
-                  style: SenseTypography.labelBold.copyWith(
-                    color: SenseColors.blue600,
-                    fontSize: 12,
+                Flexible(
+                  child: Text(
+                    'View observation details',
+                    style: SenseTypography.labelBold.copyWith(
+                      color: SenseColors.textAccent,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),

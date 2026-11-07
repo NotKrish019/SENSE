@@ -5,7 +5,16 @@ class SenseColors {
   // Brand Foundation Palette
   static const Color navy900 = Color(0xFF012F5F);      // Primary text, headings, brand anchor
   static const Color blue800 = Color(0xFF02549B);      // Secondary brand blue, active nav, hero gradient
-  static const Color blue600 = Color(0xFF059BE0);      // Primary action, links, chart series
+  static const Color blue600 = Color(0xFF059BE0);      // Electric Blue: icons, chart series, focus, indicators.
+                                                       // NOT for small text (3.1:1 on white) — use textAccent.
+
+  // Accessible variants (WCAG 2.2 AA; ratios verified in test/contrast_test.dart)
+  /// Small links, active navigation labels, text buttons. Ocean Blue:
+  /// 7.65:1 on white, 6.92:1 on background.
+  static const Color textAccent = blue800;
+  /// Darker Electric Blue used as the light end of the primary button
+  /// gradient so white labels reach 4.63:1 (the original #059BE0 gave 3.10:1).
+  static const Color blue700 = Color(0xFF047CB3);
   static const Color cyan500 = Color(0xFF07CCFC);      // Small highlights, focus accents, chart points
   static const Color cyan300 = Color(0xFF58E2F9);      // Soft decorative accents, secondary details
 
@@ -18,7 +27,9 @@ class SenseColors {
   // Text Hierarchy
   static const Color textPrimary = Color(0xFF082B52);  // Primary headings & body on light background
   static const Color textSecondary = Color(0xFF496784);// Supporting text, section subtitles, labels
-  static const Color textMuted = Color(0xFF607B93);    // Captions, timestamps, metadata
+  static const Color textMuted = Color(0xFF587187);    // Captions, timestamps, metadata.
+                                                       // Was #607B93 (4.00:1 on background); now
+                                                       // 4.60:1 on background, 5.09:1 on white.
   static const Color textOnDark = Color(0xFFFFFFFF);   // White text on navy/blue hero panels
 
   // Borders & Separators
@@ -31,6 +42,16 @@ class SenseColors {
   static const Color danger = Color(0xFFB42332);       // Crisis alert or error state only
 
   // Gradients
+  /// Background for primary buttons that carry WHITE TEXT: every point of the
+  /// gradient keeps white text >= 4.5:1 (4.63:1 to 7.65:1).
+  static const LinearGradient primaryButtonGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [blue700, blue800],
+  );
+
+  /// Brand gradient for icon-only and decorative surfaces (logo mark, mic,
+  /// centre "+" action). Not for text labels — use [primaryButtonGradient].
   static const LinearGradient primaryActionGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,

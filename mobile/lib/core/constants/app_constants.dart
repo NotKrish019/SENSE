@@ -1,6 +1,6 @@
-/// Core constants for MindPulse application.
+/// Core constants for the SENSE application (formerly "MindPulse").
 class AppConstants {
-  static const String appName = 'MindPulse';
+  static const String appName = 'SENSE';
   static const String appSubtitle = 'Personalized Well-Being Research';
   static const String appVersion = '0.1.0';
 
@@ -19,7 +19,7 @@ class AppConstants {
 
   // Disclaimer
   static const String nonClinicalDisclaimer =
-      'MindPulse is an experimental digital well-being research application. '
+      'SENSE is an experimental digital well-being research application. '
       'It does not provide clinical diagnoses, psychiatric treatment, or medical advice. '
       'If you are experiencing severe distress or crisis, please contact emergency support.';
 }

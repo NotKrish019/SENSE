@@ -4,6 +4,7 @@ import '../../core/safety/crisis_service.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
+import '../widgets/sample_data_banner.dart';
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -14,7 +15,6 @@ class JournalScreen extends StatefulWidget {
 
 class _JournalScreenState extends State<JournalScreen> {
   final TextEditingController _controller = TextEditingController();
-  final CrisisService _crisisService = CrisisService();
   bool _isCrisisDetected = false;
   bool _isSaved = false;
 
@@ -33,7 +33,7 @@ class _JournalScreenState extends State<JournalScreen> {
 
   void _onTextChanged() {
     final text = _controller.text;
-    final hasCrisis = _crisisService.containsCrisisMarkers(text);
+    final hasCrisis = CrisisService.containsCrisisMarkers(text);
     if (hasCrisis != _isCrisisDetected) {
       setState(() => _isCrisisDetected = hasCrisis);
     } else {
@@ -88,11 +88,13 @@ class _JournalScreenState extends State<JournalScreen> {
                         children: [
                           const Icon(Icons.emergency_rounded, color: SenseColors.danger, size: 22),
                           const SizedBox(width: 8),
-                          Text(
-                            'Support is Available 24/7',
-                            style: SenseTypography.labelBold.copyWith(
-                              color: SenseColors.danger,
-                              fontSize: 14,
+                          Expanded(
+                            child: Text(
+                              'Support is Available 24/7',
+                              style: SenseTypography.labelBold.copyWith(
+                                color: SenseColors.danger,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ],
@@ -136,8 +138,10 @@ class _JournalScreenState extends State<JournalScreen> {
               const SizedBox(height: 16),
 
               // Main Writing Surface
+              // Minimum (not fixed) height: the writing area grows with the
+              // entry and with larger text; the page scrolls instead.
               Container(
-                height: 260,
+                constraints: const BoxConstraints(minHeight: 260),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: SenseColors.white,
@@ -146,30 +150,37 @@ class _JournalScreenState extends State<JournalScreen> {
                   boxShadow: SenseShadows.recessed,
                 ),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
+                    TextField(
                         controller: _controller,
+                        minLines: 7,
                         maxLines: null,
-                        expands: true,
+                        keyboardType: TextInputType.multiline,
                         style: SenseTypography.body.copyWith(
                           color: SenseColors.textPrimary,
                           fontSize: 15,
                           height: 1.5,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Write freely. Entries are stored only on your device and are never shared...',
+                          hintText: 'Write freely. In this prototype, your text stays on this screen only and is not saved.',
                           hintStyle: SenseTypography.bodySecondary.copyWith(
                             color: SenseColors.textMuted,
                           ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                         ),
-                      ),
                     ),
                     const Divider(color: SenseColors.border, height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // Counter and "not saved" notice wrap onto two lines if needed;
+                    // the honesty notice is never cut off.
+                    SizedBox(
+                      width: double.infinity,
+                      child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '$wordCount words • ${_controller.text.length} chars',
@@ -179,20 +190,24 @@ class _JournalScreenState extends State<JournalScreen> {
                           ),
                         ),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.lock_outline_rounded, size: 13, color: SenseColors.success),
+                            const Icon(Icons.info_outline_rounded, size: 13, color: SenseColors.textSecondary),
                             const SizedBox(width: 4),
-                            Text(
-                              'Encrypted on-device',
-                              style: SenseTypography.caption.copyWith(
-                                color: SenseColors.success,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                            Flexible(
+                              child: Text(
+                                'Not saved (prototype)',
+                                style: SenseTypography.caption.copyWith(
+                                  color: SenseColors.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ],
+                      ),
                     ),
                   ],
                 ),
@@ -209,7 +224,10 @@ class _JournalScreenState extends State<JournalScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Text is parsed on-device to extract general lexical tone (sentiment & pronoun density). Raw text is never transmitted to cloud LLM APIs.',
+                        'What happens to your text: it is checked on this device against a '
+                        'short list of crisis phrases so support contacts can be shown. No '
+                        'sentiment or AI analysis runs yet, nothing is sent anywhere, and the '
+                        'entry is not saved.',
                         style: SenseTypography.caption.copyWith(
                           color: SenseColors.textSecondary,
                           height: 1.4,
@@ -222,7 +240,7 @@ class _JournalScreenState extends State<JournalScreen> {
               const SizedBox(height: 28),
 
               SenseButton(
-                label: _isSaved ? 'Saved to Local Device' : 'Save Reflection',
+                label: _isSaved ? 'Not saved — prototype' : 'Save Reflection',
                 icon: Icons.save_rounded,
                 variant: _isSaved ? SenseButtonVariant.secondary : SenseButtonVariant.primary,
                 onPressed: _controller.text.trim().isEmpty ? null : _saveJournal,
@@ -236,16 +254,10 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   void _saveJournal() {
+    // Persistence is not connected yet: say so, and keep the screen open so
+    // the text is not discarded unexpectedly.
     setState(() => _isSaved = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Journal entry saved locally to encrypted SQLite database.'),
-        backgroundColor: SenseColors.navy900,
-      ),
-    );
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (mounted) Navigator.of(context).pop();
-    });
+    showPrototypeNotSavedMessage(context, 'journal entry');
   }
 
   void _confirmDiscard() {

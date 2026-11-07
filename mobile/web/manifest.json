@@ -1,0 +1,35 @@
+{
+    "name": "SENSE",
+    "short_name": "SENSE",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#E6F6FF",
+    "theme_color": "#012F5F",
+    "description": "SENSE — non-clinical well-being research prototype.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

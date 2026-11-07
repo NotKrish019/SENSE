@@ -217,10 +217,11 @@ class _DesignShowcaseScreenState extends State<DesignShowcaseScreen> {
 
               // 5. Neumorphic Surfaces & Hero Card
               _buildSectionHeader('5. Hero Card & Quick Action Tile'),
+              // Component preview with illustrative values only.
               const StressSummaryCard(
-                statusText: 'Moderate',
+                statusText: 'Sample state',
                 scoreFraction: 0.52,
-                subtitle: 'Within your normal baseline corridor',
+                subtitle: 'Sample data — component preview, not a real stress level.',
               ),
               const SizedBox(height: 14),
               Row(
@@ -254,12 +255,11 @@ class _DesignShowcaseScreenState extends State<DesignShowcaseScreen> {
 
               // 6. Data Visuals & Charts
               _buildSectionHeader('6. Charts & Data Visuals'),
-              SenseSplineTrendChart(
-                values: const [2.8, 3.2, 3.0, 3.4, 2.9, 2.4, 2.2],
+              const SenseSplineTrendChart(
+                values: [2.8, 3.2, 3.0, 3.4, 2.9, 2.4, 2.2],
                 title: 'Stress Trend',
-                metricDelta: '↓ 18%',
-                subtitle: 'Lower than yesterday',
-                isDeltaPositive: true,
+                subtitle: 'Component preview',
+                isSampleData: true,
               ),
               const SizedBox(height: 14),
               Row(
@@ -268,12 +268,13 @@ class _DesignShowcaseScreenState extends State<DesignShowcaseScreen> {
                     flex: 3,
                     child: SenseWeeklyBarChart(
                       dayFractions: const [0.35, 0.45, 0.65, 0.50, 0.70, 0.85, 0.40],
+                      isSampleData: true,
                     ),
                   ),
                   const SizedBox(width: 10),
                   const Expanded(
                     flex: 2,
-                    child: SenseDonutQualityChart(percentage: 72),
+                    child: SenseDonutQualityChart(percentage: 72, isSampleData: true),
                   ),
                 ],
               ),

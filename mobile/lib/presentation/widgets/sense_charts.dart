@@ -2,22 +2,27 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'sense_card.dart';
+import 'sense_chips.dart';
 
 /// Smooth Spline Trend Chart matching the SENSE UI Toolkit Board
 class SenseSplineTrendChart extends StatelessWidget {
   final List<double> values;
   final String title;
   final String subtitle;
+  /// Optional change label. Empty hides it: only show a computed change.
   final String metricDelta;
   final bool isDeltaPositive;
+  /// Shows the shared "Sample data" badge for illustrative values.
+  final bool isSampleData;
 
   const SenseSplineTrendChart({
     super.key,
     required this.values,
     this.title = 'Stress Trend',
-    this.subtitle = 'Lower than yesterday',
-    this.metricDelta = '↓ 18%',
+    this.subtitle = '',
+    this.metricDelta = '',
     this.isDeltaPositive = true,
+    this.isSampleData = false,
   });
 
   @override
@@ -27,8 +32,12 @@ class SenseSplineTrendChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          SizedBox(
+            width: double.infinity, // lets spaceBetween reach the right edge
+            child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,9 +50,13 @@ class SenseSplineTrendChart extends StatelessWidget {
                       color: SenseColors.navy900,
                     ),
                   ),
+                  if (metricDelta.isNotEmpty || subtitle.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    spacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
+                      if (metricDelta.isNotEmpty)
                       Text(
                         metricDelta,
                         style: SenseTypography.labelBold.copyWith(
@@ -51,7 +64,6 @@ class SenseSplineTrendChart extends StatelessWidget {
                           fontSize: 15,
                         ),
                       ),
-                      const SizedBox(width: 6),
                       Text(
                         subtitle,
                         style: SenseTypography.caption.copyWith(
@@ -60,9 +72,12 @@ class SenseSplineTrendChart extends StatelessWidget {
                       ),
                     ],
                   ),
+                  ],
                 ],
               ),
+              if (isSampleData) const SenseProvenanceBadge.sampleData(),
             ],
+          ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -156,16 +171,19 @@ class _SplineChartPainter extends CustomPainter {
 class SenseWeeklyBarChart extends StatelessWidget {
   final List<double> dayFractions; // 7 values for Mon-Sun (0.0 to 1.0)
   final String title;
+  final bool isSampleData;
 
   const SenseWeeklyBarChart({
     super.key,
     required this.dayFractions,
     this.title = 'Weekly Stress',
+    this.isSampleData = false,
   });
 
   @override
   Widget build(BuildContext context) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const fullDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     return SenseCard(
       padding: const EdgeInsets.all(18),
@@ -180,41 +198,76 @@ class SenseWeeklyBarChart extends StatelessWidget {
               color: SenseColors.navy900,
             ),
           ),
+          if (isSampleData) ...[
+            const SizedBox(height: 6),
+            const SenseProvenanceBadge.sampleData(),
+          ],
           const SizedBox(height: 18),
-          SizedBox(
-            height: 90,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Each day gets an equal slot. If 3-letter labels ("Wed") do not fit
+          // a slot at the current text size, single letters (M T W …) are
+          // shown at full size instead of squeezing words together; every bar
+          // is still announced with its full day name.
+          LayoutBuilder(builder: (context, constraints) {
+            final labelStyle = SenseTypography.caption.copyWith(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            );
+            final painter = TextPainter(
+              text: TextSpan(text: 'Wed', style: labelStyle),
+              textScaler: MediaQuery.textScalerOf(context),
+              textDirection: TextDirection.ltr,
+              maxLines: 1,
+            )..layout();
+            final slot = constraints.maxWidth / 7;
+            final compact = painter.width + 2 > slot;
+            painter.dispose();
+            return Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (i) {
                 final frac = i < dayFractions.length ? dayFractions[i] : 0.4;
                 final isToday = (i == 4); // Friday
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 14,
-                      height: (frac * 65).clamp(10.0, 65.0),
-                      decoration: BoxDecoration(
-                        color: isToday ? SenseColors.blue600 : SenseColors.cyan300,
-                        borderRadius: SenseRadii.smBorder,
-                        gradient: isToday ? SenseColors.primaryActionGradient : null,
-                      ),
+                return Expanded(
+                  child: Semantics(
+                    label: isSampleData
+                        ? '${fullDays[i]}, sample bar'
+                        : fullDays[i],
+                    excludeSemantics: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 65,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              width: 14,
+                              height: (frac * 65).clamp(10.0, 65.0),
+                              decoration: BoxDecoration(
+                                color: isToday ? SenseColors.blue600 : SenseColors.cyan300,
+                                borderRadius: SenseRadii.smBorder,
+                                gradient: isToday ? SenseColors.primaryActionGradient : null,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          compact ? days[i].substring(0, 1) : days[i],
+                          maxLines: 1,
+                          softWrap: false,
+                          style: SenseTypography.caption.copyWith(
+                            fontSize: 11,
+                            color: isToday ? SenseColors.navy900 : SenseColors.textSecondary,
+                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      days[i],
-                      style: SenseTypography.caption.copyWith(
-                        fontSize: 11,
-                        color: isToday ? SenseColors.navy900 : SenseColors.textSecondary,
-                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                  ),
                 );
               }),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );
@@ -225,11 +278,17 @@ class SenseWeeklyBarChart extends StatelessWidget {
 class SenseDonutQualityChart extends StatelessWidget {
   final int percentage;
   final String label;
+  /// Overrides the centre text (default "$percentage%"), e.g. "4 / 5" for a
+  /// self-reported rating. Never present an uncomputed score as a percentage.
+  final String? centerText;
+  final bool isSampleData;
 
   const SenseDonutQualityChart({
     super.key,
-    this.percentage = 72,
+    required this.percentage,
     this.label = 'Sleep Quality',
+    this.centerText,
+    this.isSampleData = false,
   });
 
   @override
@@ -250,7 +309,7 @@ class SenseDonutQualityChart extends StatelessWidget {
                   painter: _DonutChartPainter(percentage: percentage),
                 ),
                 Text(
-                  '$percentage%',
+                  centerText ?? '$percentage%',
                   style: SenseTypography.labelBold.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -269,6 +328,10 @@ class SenseDonutQualityChart extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          if (isSampleData) ...[
+            const SizedBox(height: 6),
+            const SenseProvenanceBadge.sampleData(),
+          ],
         ],
       ),
     );

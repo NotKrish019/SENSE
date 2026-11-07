@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sample_data_banner.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
+import '../widgets/sense_inputs.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key});
@@ -14,8 +16,6 @@ class ActivityScreen extends StatefulWidget {
 class _ActivityScreenState extends State<ActivityScreen> {
   int _steps = 6800;
   int _activeMinutes = 35;
-  bool _healthConnectConnected = false;
-  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -50,23 +50,25 @@ class _ActivityScreenState extends State<ActivityScreen> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Column(
+                    Expanded(
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Daily Movement',
+                          'Your entry (manual)',
                           style: SenseTypography.captionMedium.copyWith(
                             color: SenseColors.textSecondary,
                           ),
                         ),
                         Text(
-                          '$_steps Steps • $_activeMinutes Mins Active',
+                          '$_steps steps • $_activeMinutes active mins',
                           style: SenseTypography.h3.copyWith(
                             color: SenseColors.navy900,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ],
                 ),
@@ -82,19 +84,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
               SenseCard(
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('1,000', style: SenseTypography.caption),
-                        Text(
-                          '$_steps steps',
-                          style: SenseTypography.h2.copyWith(
-                            color: SenseColors.blue800,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text('20,000', style: SenseTypography.caption),
-                      ],
+                    SenseSliderLabels(
+                      minLabel: '1,000',
+                      valueLabel: '$_steps steps',
+                      maxLabel: '20,000',
+                      valueStyle: SenseTypography.h2.copyWith(
+                        color: SenseColors.blue800,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Slider(
                       value: _steps.toDouble(),
@@ -119,19 +116,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
               SenseCard(
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('0 mins', style: SenseTypography.caption),
-                        Text(
-                          '$_activeMinutes mins',
-                          style: SenseTypography.h2.copyWith(
-                            color: SenseColors.blue800,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text('120 mins', style: SenseTypography.caption),
-                      ],
+                    SenseSliderLabels(
+                      minLabel: '0 mins',
+                      valueLabel: '$_activeMinutes mins',
+                      maxLabel: '120 mins',
+                      valueStyle: SenseTypography.h2.copyWith(
+                        color: SenseColors.blue800,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Slider(
                       value: _activeMinutes.toDouble(),
@@ -153,38 +145,41 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.sync_rounded, color: SenseColors.blue600, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Auto-sync with Health Connect',
-                              style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
-                            ),
-                          ],
+                        const Icon(Icons.sync_rounded, color: SenseColors.blue600, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Health Connect sync (planned)',
+                            style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
+                          ),
                         ),
-                        Switch(
-                          value: _healthConnectConnected,
-                          activeColor: SenseColors.cyan500,
-                          onChanged: (v) {
-                            setState(() => _healthConnectConnected = v);
+                        // Always off: announced as an unavailable option, never as granted.
+                        Semantics(
+                          label: 'Health Connect sync, not available in this prototype',
+                          child: Switch(
+                          value: false,
+                          activeThumbColor: SenseColors.cyan500,
+                          // Not implemented: never simulate a granted permission.
+                          onChanged: (_) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(v
-                                    ? 'Health Connect permission mock granted (Phase 3 feature).'
-                                    : 'Auto-sync disabled. Using manual logging.'),
+                              const SnackBar(
+                                content: Text(
+                                    'Health Connect sync is not available in this prototype. '
+                                    'No permission was requested and no data was read.'),
                                 backgroundColor: SenseColors.navy900,
                               ),
                             );
                           },
                         ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Zero GPS or continuous background location tracking. Only aggregated daily step totals are read with your explicit permission.',
+                      'Not connected yet. If added later, it would read only daily step '
+                      'totals, with your explicit permission — no GPS or background '
+                      'location tracking.',
                       style: SenseTypography.caption.copyWith(
                         color: SenseColors.textSecondary,
                         height: 1.4,
@@ -198,7 +193,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
               SenseButton(
                 label: 'Save Activity Entry',
                 icon: Icons.save_rounded,
-                isLoading: _isSaving,
                 onPressed: _saveActivity,
               ),
               const SizedBox(height: 16),
@@ -210,19 +204,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   }
 
   void _saveActivity() {
-    setState(() => _isSaving = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Activity metrics added to personal baseline.'),
-            backgroundColor: SenseColors.navy900,
-          ),
-        );
-        Navigator.of(context).pop();
-      }
-    });
+    // Persistence is not connected yet: report that honestly.
+    showPrototypeNotSavedMessage(context, 'activity entry');
   }
 }
 

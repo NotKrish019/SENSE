@@ -3,6 +3,7 @@ import '../../core/theme/app_theme.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
+import '../widgets/sense_inputs.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -16,7 +17,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
   int _selectedMood = 3; // 1 to 5
   int _perceivedStress = 2; // 1 to 5
   int _motivationLevel = 3; // 1 to 5
-  bool _isSaving = false;
   bool _isSaved = false;
 
   final List<Map<String, dynamic>> _moodOptions = [
@@ -43,22 +43,23 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   height: 72,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFFE0F7F3),
+                    color: Color(0xFFE6F6FF),
                   ),
                   child: const Icon(
-                    Icons.check_circle_rounded,
-                    color: SenseColors.success,
+                    Icons.info_outline_rounded,
+                    color: SenseColors.blue800,
                     size: 48,
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Check-in Recorded',
+                  'Check-in complete — not saved',
                   style: SenseTypography.h2.copyWith(color: SenseColors.navy900),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Your daily subjective markers have been added to your local baseline. Indicators remain comfortably within your personal equilibrium.',
+                  'Thank you for trying the check-in. In this prototype your answers '
+                  'are not saved and no personal baseline is updated.',
                   style: SenseTypography.body.copyWith(
                     color: SenseColors.textSecondary,
                     height: 1.45,
@@ -137,16 +138,30 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Mood Selection Grid (Emoticons + text labels)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Mood Selection Grid (Emoticons + text labels): options are sized
+                // from the available width — 5 per row normally, 3 per row
+                // (wrapping) on narrow screens or with large text.
+                LayoutBuilder(builder: (context, constraints) {
+                  const gap = 8.0;
+                  final scale = MediaQuery.textScalerOf(context).scale(1.0);
+                  final perRow = (constraints.maxWidth < 330 || scale >= 1.3) ? 3 : 5;
+                  final itemWidth =
+                      ((constraints.maxWidth - gap * (perRow - 1)) / perRow).floorToDouble();
+                  return Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
                   children: _moodOptions.map((opt) {
                     final isSelected = (_selectedMood == opt['val']);
-                    return GestureDetector(
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: 'Mood: ${opt['label']}',
+                      excludeSemantics: true,
+                      child: GestureDetector(
                       onTap: () => setState(() => _selectedMood = opt['val'] as int),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
-                        width: 62,
+                        width: itemWidth,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: isSelected ? SenseColors.navy900 : SenseColors.white,
@@ -166,6 +181,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                             const SizedBox(height: 6),
                             Text(
                               opt['label'] as String,
+                              textAlign: TextAlign.center,
                               style: SenseTypography.caption.copyWith(
                                 color: isSelected ? SenseColors.white : SenseColors.textSecondary,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -175,9 +191,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
                           ],
                         ),
                       ),
+                      ),
                     );
                   }).toList(),
-                ),
+                  );
+                }),
                 const SizedBox(height: 32),
 
                 // Motivation Level
@@ -194,14 +212,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 SenseCard(
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Low Energy', style: SenseTypography.caption),
-                          Text('Rating: $_motivationLevel / 5',
-                              style: SenseTypography.labelBold.copyWith(color: SenseColors.blue800)),
-                          Text('High Energy', style: SenseTypography.caption),
-                        ],
+                      SenseSliderLabels(
+                        minLabel: 'Low Energy',
+                        valueLabel: 'Rating: $_motivationLevel / 5',
+                        maxLabel: 'High Energy',
                       ),
                       Slider(
                         value: _motivationLevel.toDouble(),
@@ -237,18 +251,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 SenseCard(
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('1 — Relaxed', style: SenseTypography.caption),
-                          Text('Score: $_perceivedStress / 5',
-                              style: SenseTypography.labelBold.copyWith(
-                                color: _perceivedStress >= 4
-                                    ? SenseColors.warning
-                                    : SenseColors.blue800,
-                              )),
-                          Text('5 — Very Stressed', style: SenseTypography.caption),
-                        ],
+                      SenseSliderLabels(
+                        minLabel: '1 — Relaxed',
+                        valueLabel: 'Score: $_perceivedStress / 5',
+                        maxLabel: '5 — Very Stressed',
+                        valueStyle: SenseTypography.labelBold.copyWith(
+                          color: _perceivedStress >= 4 ? SenseColors.warning : SenseColors.blue800,
+                        ),
                       ),
                       Slider(
                         value: _perceivedStress.toDouble(),
@@ -280,7 +289,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Self-report ratings update your dynamic baseline. Single acute ratings are smoothed by CUSUM filtering to prevent false alerts.',
+                          'Planned: once saving is connected, your ratings will be compared '
+                          'with your own history, and single unusual days will be smoothed out '
+                          'before any pattern is shown. This is not active yet — ratings are '
+                          'not saved in this prototype.',
                           style: SenseTypography.caption.copyWith(
                             color: SenseColors.textSecondary,
                             height: 1.4,
@@ -307,7 +319,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
                       flex: 2,
                       child: SenseButton(
                         label: 'Save Check-in',
-                        isLoading: _isSaving,
                         onPressed: _handleSave,
                       ),
                     ),
@@ -322,14 +333,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 
   void _handleSave() {
-    setState(() => _isSaving = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() {
-          _isSaving = false;
-          _isSaved = true;
-        });
-      }
-    });
+    // No persistence yet: go straight to the honest "not saved" state instead
+    // of simulating a saving delay.
+    setState(() => _isSaved = true);
   }
 }

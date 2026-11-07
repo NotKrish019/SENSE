@@ -2,22 +2,27 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
 class StressSummaryCard extends StatelessWidget {
-  final String statusText;      // e.g. "Moderate", "Calibrated Equilibrium", "Mild"
-  final double scoreFraction;    // 0.0 to 1.0 (e.g. 0.50)
+  final String statusText;      // e.g. "No pattern yet" until a real baseline exists
+  /// 0.0 to 1.0. Null hides the bar: never show a level that was not computed.
+  final double? scoreFraction;
   final String? subtitle;
   final VoidCallback? onTap;
 
   const StressSummaryCard({
     super.key,
-    this.statusText = 'Moderate',
-    this.scoreFraction = 0.50,
+    this.statusText = 'No pattern yet',
+    this.scoreFraction,
     this.subtitle,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // When tappable, announced as one button labelled with the card's text.
+    return MergeSemantics(
+      child: Semantics(
+      button: onTap != null,
+      child: GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -38,9 +43,9 @@ class StressSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                Expanded(
+                  child: Row(
                   children: [
                     Container(
                       width: 36,
@@ -57,7 +62,8 @@ class StressSummaryCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Column(
+                    Expanded(
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -76,8 +82,10 @@ class StressSummaryCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ],
+                  ),
                 ),
                 const Icon(
                   Icons.chevron_right_rounded,
@@ -86,6 +94,7 @@ class StressSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (scoreFraction != null) ...[
             const SizedBox(height: 18),
             // Cyan gradient progress bar matching the UI Toolkit board
             Stack(
@@ -99,7 +108,7 @@ class StressSummaryCard extends StatelessWidget {
                   ),
                 ),
                 FractionallySizedBox(
-                  widthFactor: scoreFraction.clamp(0.05, 1.0),
+                  widthFactor: scoreFraction!.clamp(0.05, 1.0),
                   child: Container(
                     height: 8,
                     decoration: BoxDecoration(
@@ -117,6 +126,7 @@ class StressSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
+            ],
             if (subtitle != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -129,6 +139,8 @@ class StressSummaryCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+      ),
       ),
     );
   }

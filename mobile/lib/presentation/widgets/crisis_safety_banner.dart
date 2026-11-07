@@ -25,16 +25,16 @@ class CrisisSafetyBanner extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.support_agent_rounded, color: AppTheme.crisisCrimson, size: 28),
+                  const Icon(Icons.support_agent_rounded, color: SenseColors.danger, size: 28),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
                       'Immediate Support & Crisis Helplines',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: SenseColors.textPrimary),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppTheme.textMuted),
+                    icon: const Icon(Icons.close, color: SenseColors.textMuted),
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
@@ -42,7 +42,7 @@ class CrisisSafetyBanner extends StatelessWidget {
               const SizedBox(height: 8),
               const Text(
                 'If you are feeling overwhelmed, hopeless, or in acute distress, free, confidential human support is available 24/7:',
-                style: TextStyle(fontSize: 14, color: AppTheme.textMuted, height: 1.4),
+                style: TextStyle(fontSize: 14, color: SenseColors.textMuted, height: 1.4),
               ),
               const SizedBox(height: 16),
               ...CrisisService.helplines.map((helpline) {
@@ -64,16 +64,20 @@ class CrisisSafetyBanner extends StatelessWidget {
                     ),
                     trailing: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryTeal,
+                        backgroundColor: SenseColors.blue600,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       icon: const Icon(Icons.call, size: 16),
                       label: const Text('Call'),
                       onPressed: () {
-                        // Triggers system dialer
+                        // In-app dialling is not implemented: never imply a call started.
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Dialing ${helpline.phoneNumber}...')),
+                          SnackBar(
+                            content: Text(
+                                'Please dial ${helpline.phoneNumber} from your phone. '
+                                'Calling directly from SENSE is not set up yet.'),
+                          ),
                         );
                       },
                     ),
@@ -83,7 +87,7 @@ class CrisisSafetyBanner extends StatelessWidget {
               const SizedBox(height: 8),
               const Text(
                 AppConstants.nonClinicalDisclaimer,
-                style: TextStyle(fontSize: 11, color: AppTheme.textMuted, fontStyle: FontStyle.italic),
+                style: TextStyle(fontSize: 11, color: SenseColors.textMuted, fontStyle: FontStyle.italic),
               ),
             ],
           ),

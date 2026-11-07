@@ -50,6 +50,8 @@ htmlcov/
 .pub-cache/
 .pub/
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
 
 # Databases
 *.db

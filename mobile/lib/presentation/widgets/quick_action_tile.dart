@@ -24,7 +24,11 @@ class _QuickActionTileState extends State<QuickActionTile> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: widget.label,
+      excludeSemantics: true,
+      child: GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
@@ -60,13 +64,19 @@ class _QuickActionTileState extends State<QuickActionTile> {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              widget.label,
-              style: SenseTypography.labelBold.copyWith(
-                color: SenseColors.navy900,
-                fontSize: 13,
+            // Single-word labels: shrink only if the word cannot fit, rather
+            // than breaking it mid-word ("Workloa/d").
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                style: SenseTypography.labelBold.copyWith(
+                  color: SenseColors.navy900,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
             if (widget.badgeText != null) ...[
               const SizedBox(height: 4),
@@ -80,6 +90,7 @@ class _QuickActionTileState extends State<QuickActionTile> {
             ],
           ],
         ),
+      ),
       ),
     );
   }

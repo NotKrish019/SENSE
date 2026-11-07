@@ -25,10 +25,10 @@ class CalibrationProgressCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentSage.withOpacity(0.15),
+                  color: SenseColors.success.withOpacity(0.15),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_circle_rounded, color: AppTheme.primaryTeal, size: 28),
+                child: const Icon(Icons.check_circle_rounded, color: SenseColors.blue600, size: 28),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -37,12 +37,12 @@ class CalibrationProgressCard extends StatelessWidget {
                   children: [
                     Text(
                       'Personal Baseline Active',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.textDark),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: SenseColors.textPrimary),
                     ),
                     SizedBox(height: 2),
                     Text(
-                      'Insights are personalized against your 14-day dynamic equilibrium.',
-                      style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                      'Observations will be compared with your own recent history.',
+                      style: TextStyle(fontSize: 13, color: SenseColors.textMuted),
                     ),
                   ],
                 ),
@@ -66,11 +66,11 @@ class CalibrationProgressCard extends StatelessWidget {
               children: [
                 const Text(
                   'Calibrating Personal Baseline',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.textDark),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: SenseColors.textPrimary),
                 ),
                 Text(
                   'Day $daysCompleted of ${AppConstants.calibrationDaysRequired}',
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppTheme.primaryTeal),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: SenseColors.textAccent),
                 ),
               ],
             ),
@@ -81,13 +81,13 @@ class CalibrationProgressCard extends StatelessWidget {
                 value: progress,
                 minHeight: 8,
                 backgroundColor: Colors.grey.shade200,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryTeal),
+                valueColor: const AlwaysStoppedAnimation<Color>(SenseColors.blue600),
               ),
             ),
             const SizedBox(height: 10),
             const Text(
-              'Early warnings are suppressed during calibration to prevent false alarms. Continue your daily reflections to build an accurate personal model.',
-              style: TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.3),
+              'No patterns are shown until enough days have been recorded, to avoid misleading results from too little data.',
+              style: TextStyle(fontSize: 12, color: SenseColors.textMuted, height: 1.3),
             ),
           ],
         ),

@@ -1,33 +1,33 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../widgets/sense_button.dart';
+import '../../core/constants/prototype_copy.dart';
 import '../widgets/sense_card.dart';
-import '../widgets/sense_inputs.dart';
+import '../../core/state/consent_preferences.dart';
 import '../widgets/sense_navigation.dart';
+import 'consent_screen.dart';
 
+/// Profile & settings: the Profile tab's landing screen. Holds the (honest)
+/// profile placeholder, support contacts, data & consent review, privacy and
+/// data management, and app information.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  /// True when shown as the Profile bottom-navigation tab (no back arrow).
+  final bool isTabRoot;
+
+  const SettingsScreen({super.key, this.isTabRoot = false});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Granular consent state per modality
-  bool _consentCheckIn = true;
-  bool _consentSleep = true;
-  bool _consentWorkload = true;
-  bool _consentJournal = true;
-  bool _consentVoice = false;
-  bool _consentActivity = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: SenseColors.background,
-      appBar: const SenseAppBar(
-        title: 'Privacy & Profile',
-        showBackButton: false,
+      appBar: SenseAppBar(
+        title: 'Profile & settings',
+        showBackButton: !widget.isTabRoot,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -38,7 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Participant Profile Card
+              _sectionHeading('Profile'),
+              // Profile overview: only information that genuinely exists.
               SenseCard(
                 child: Row(
                   children: [
@@ -52,11 +53,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: const Icon(Icons.person_rounded, color: SenseColors.white, size: 28),
                     ),
                     const SizedBox(width: 14),
-                    Column(
+                    Expanded(
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Participant Profile',
+                          'Profile setup is not available yet',
                           style: SenseTypography.h3.copyWith(
                             color: SenseColors.navy900,
                             fontWeight: FontWeight.w700,
@@ -64,23 +66,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'ID: usr_8f3d4a92 (Pseudonymous)',
+                          'This prototype has no accounts, so no name, ID or personal '
+                          'details are stored.',
                           style: SenseTypography.caption.copyWith(color: SenseColors.textSecondary),
                         ),
                         Text(
-                          'Baseline: Calibrated (Day 15/14)',
+                          'Personal baseline: not started',
                           style: SenseTypography.caption.copyWith(
-                            color: SenseColors.success,
+                            color: SenseColors.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 24),
 
+              _sectionHeading('Support'),
               // Emergency Support Banner (Permanent out-of-band crisis assistance)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -96,12 +101,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         const Icon(Icons.support_agent_rounded, color: Color(0xFFB45309), size: 22),
                         const SizedBox(width: 8),
-                        Text(
+                        Expanded(
+                          child: Text(
                           '24/7 National Crisis Helplines',
                           style: SenseTypography.labelBold.copyWith(
                             color: const Color(0xFF92400E),
                             fontSize: 14,
                           ),
+                        ),
                         ),
                       ],
                     ),
@@ -121,75 +128,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Granular Modality Consent
+              // Data & consent preferences: one shared, in-memory source of truth
+              // (ConsentPreferences), reviewed on the same screen as onboarding.
+              _sectionHeading('Data & consent'),
               Text(
-                'Granular Modality Consent',
-                style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Every modality is separately opt-in. Disabling an indicator removes it from late fusion without penalizing your baseline.',
+                'Each input is optional. In this prototype your choices are kept only while '
+                'the app is open, are not saved, and do not start any data collection.',
                 style: SenseTypography.bodySecondary,
               ),
               const SizedBox(height: 12),
-              SenseCard(
-                child: Column(
-                  children: [
-                    SenseToggleSwitch(
-                      label: 'M1: Structured Check-ins',
-                      value: _consentCheckIn,
-                      onChanged: (v) => setState(() => _consentCheckIn = v),
+              ListenableBuilder(
+                listenable: ConsentPreferences.instance,
+                builder: (context, _) {
+                  final prefs = ConsentPreferences.instance;
+                  final on = InputModality.values.where(prefs.isEnabled).toList();
+                  return SenseCard(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      minVerticalPadding: 12,
+                      leading: const Icon(Icons.fact_check_outlined, color: SenseColors.blue600),
+                      title: Text(
+                        'Review data and consent preferences',
+                        style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          on.isEmpty
+                              ? 'Currently on: none (not saved)'
+                              : 'Currently on: ${on.map((m) => '${m.code} ${m.title}').join(', ')} (not saved)',
+                          style: SenseTypography.caption,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: SenseColors.textSecondary),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ConsentScreen(isSettingsMode: true),
+                        ),
+                      ),
                     ),
-                    const Divider(color: SenseColors.border, height: 20),
-                    SenseToggleSwitch(
-                      label: 'M2: Daily Journal Analysis',
-                      value: _consentJournal,
-                      onChanged: (v) => setState(() => _consentJournal = v),
                     ),
-                    const Divider(color: SenseColors.border, height: 20),
-                    SenseToggleSwitch(
-                      label: 'M3: Sleep Tracking',
-                      value: _consentSleep,
-                      onChanged: (v) => setState(() => _consentSleep = v),
-                    ),
-                    const Divider(color: SenseColors.border, height: 20),
-                    SenseToggleSwitch(
-                      label: 'M4: Workload & Task Demands',
-                      value: _consentWorkload,
-                      onChanged: (v) => setState(() => _consentWorkload = v),
-                    ),
-                    const Divider(color: SenseColors.border, height: 20),
-                    SenseToggleSwitch(
-                      label: 'M5: Voice Prosody Samples',
-                      value: _consentVoice,
-                      onChanged: (v) => setState(() => _consentVoice = v),
-                    ),
-                    const Divider(color: SenseColors.border, height: 20),
-                    SenseToggleSwitch(
-                      label: 'M6: Physical Activity Sync',
-                      value: _consentActivity,
-                      onChanged: (v) => setState(() => _consentActivity = v),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
 
               // DPDP Act 2023 Rights (Portability & Erasure)
+              _sectionHeading('Privacy & data management'),
               Text(
-                'DPDP Act 2023 Data Rights',
-                style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
+                'Your data rights under the DPDP Act 2023.',
+                style: SenseTypography.bodySecondary,
               ),
               const SizedBox(height: 8),
               SenseCard(
-                child: Column(
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
                   children: [
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.download_rounded, color: SenseColors.blue600),
-                      title: Text('Export Personal Records (JSON)', style: SenseTypography.labelBold),
+                      title: Text('Export my data', style: SenseTypography.labelBold),
                       subtitle: Text(
-                        'Section 12: Receive all check-ins, sleep, workload, and inferences.',
+                        'Not available yet — nothing is stored in this prototype.',
                         style: SenseTypography.caption,
                       ),
                       trailing: const Icon(Icons.chevron_right, color: SenseColors.textSecondary),
@@ -200,11 +204,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.delete_forever_rounded, color: SenseColors.danger),
                       title: Text(
-                        'Permanently Erase All Data',
+                        'Erase my data',
                         style: SenseTypography.labelBold.copyWith(color: SenseColors.danger),
                       ),
                       subtitle: Text(
-                        'Section 13: Hard-purge all SQLite tables and personal baseline state.',
+                        'Not available yet — nothing is stored in this prototype.',
                         style: SenseTypography.caption,
                       ),
                       trailing: const Icon(Icons.chevron_right, color: SenseColors.danger),
@@ -212,14 +216,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+                ),
               ),
               const SizedBox(height: 28),
 
+              _sectionHeading('About'),
               // Research & Legal Disclaimers
               Center(
                 child: Text(
-                  'SENSE Version 0.1.0 (Phase 2 MVP)\n'
-                  'Non-Clinical Research Platform • Indian ICMR Ethical Guidelines Compliant',
+                  'SENSE 0.1.0 · UI prototype\n'
+                  'Non-clinical research prototype. Compliance with ICMR guidelines and the '
+                  'DPDP Act has not yet been assessed.',
                   style: SenseTypography.caption.copyWith(
                     color: SenseColors.textMuted,
                     fontSize: 11,
@@ -235,43 +242,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _exportData() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Exported structured user data JSON fulfilling DPDP Section 12.'),
-        backgroundColor: SenseColors.navy900,
+  Widget _sectionHeading(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        header: true,
+        child: Text(text, style: SenseTypography.h3.copyWith(color: SenseColors.navy900)),
       ),
     );
   }
 
-  void _confirmPurge() {
+  // Data rights are not implemented yet. Never simulate a successful export or
+  // deletion: explain honestly what is missing instead.
+  void _exportData() => _showUnavailable('Export not available yet', PrototypeCopy.exportUnavailable);
+
+  void _confirmPurge() => _showUnavailable('Erase not available yet', PrototypeCopy.eraseUnavailable);
+
+  void _showUnavailable(String title, String message) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Permanently Erase Data?', style: SenseTypography.h3),
-        content: Text(
-          'Under the DPDP Act 2023, this will completely delete all check-ins, sleep logs, journal reflections, and your baseline from the encrypted database. This action is irreversible.',
-          style: SenseTypography.body,
-        ),
+        title: Text(title, style: SenseTypography.h3),
+        content: Text(message, style: SenseTypography.body),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: SenseTypography.label),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All personal records have been permanently erased.'),
-                  backgroundColor: SenseColors.danger,
-                ),
-              );
-            },
-            child: Text(
-              'Erase Everything',
-              style: SenseTypography.labelBold.copyWith(color: SenseColors.danger),
-            ),
+            child: Text('OK', style: SenseTypography.labelBold),
           ),
         ],
       ),

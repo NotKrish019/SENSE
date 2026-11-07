@@ -4,6 +4,8 @@ import '../widgets/sense_card.dart';
 import '../widgets/sense_chips.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_navigation.dart';
+import '../widgets/sample_data_banner.dart';
+import '../../core/constants/prototype_copy.dart';
 
 class InsightDetailScreen extends StatelessWidget {
   final String observationTitle;
@@ -11,16 +13,23 @@ class InsightDetailScreen extends StatelessWidget {
   final String evidenceSummary;
   final String timeRange;
   final String whatCannotConclude;
+  /// True while the observation is an illustrative example rather than one
+  /// computed from the user's saved data (always true in this prototype).
+  final bool isSampleData;
 
   const InsightDetailScreen({
     super.key,
-    this.observationTitle = 'Sleep & Workload Co-occurrence',
-    this.primaryFactor = 'Rest Consistency (+0.08h sleep)',
+    this.observationTitle = 'Sleep and stress changed in the same week',
+    this.primaryFactor = 'Recorded sleep duration · Self-reported stress',
     this.evidenceSummary =
-        'Your reported sleep duration of 7.8 hours and moderate workload rating coincided with a 18% reduction in subjective stress relative to your 14-day baseline.',
-    this.timeRange = 'Oct 24 - Oct 30, 2026',
+        'In this example, recorded sleep duration was longer and self-reported '
+        'stress was lower during the same week. The two changed together; this '
+        'does not show that one caused the other.',
+    this.timeRange = 'Example week',
     this.whatCannotConclude =
-        'This statistical co-occurrence reflects observed habits, not a clinical treatment or guaranteed causal relationship.',
+        '${PrototypeCopy.noCausalClaim} SENSE does not yet produce observations '
+        'from your own data.',
+    this.isSampleData = true,
   });
 
   @override
@@ -37,13 +46,25 @@ class InsightDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isSampleData) ...[
+                const SenseSampleDataBanner(),
+                const SizedBox(height: 16),
+              ],
               // Provenance Tag & Title
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SenseProvenanceBadge(text: 'Longitudinal Analysis'),
-                  Text(timeRange, style: SenseTypography.caption),
-                ],
+              SizedBox(
+                width: double.infinity, // lets spaceBetween reach the right edge
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    isSampleData
+                        ? const SenseProvenanceBadge.sampleData()
+                        : const SenseProvenanceBadge(text: 'Observed pattern'),
+                    Text(timeRange, style: SenseTypography.caption),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -72,7 +93,7 @@ class InsightDetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Primary Associated Factor',
+                            'Indicators involved',
                             style: SenseTypography.captionMedium.copyWith(
                               color: SenseColors.textSecondary,
                             ),
@@ -94,7 +115,7 @@ class InsightDetailScreen extends StatelessWidget {
 
               // What Changed & Evidence
               Text(
-                'Observed Patterns in Your Data',
+                isSampleData ? 'What this example shows' : 'What changed in your recorded data',
                 style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
               ),
               const SizedBox(height: 8),
@@ -111,7 +132,7 @@ class InsightDetailScreen extends StatelessWidget {
 
               // Boundaries: What the system CANNOT conclude
               Text(
-                'Scientific Scope & Boundaries',
+                'What this cannot tell you',
                 style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
               ),
               const SizedBox(height: 8),
@@ -138,7 +159,7 @@ class InsightDetailScreen extends StatelessWidget {
 
               // Supportive Next Steps (Non-Clinical)
               Text(
-                'Supportive Well-being Reflections',
+                'General well-being ideas',
                 style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
               ),
               const SizedBox(height: 8),
@@ -147,14 +168,16 @@ class InsightDetailScreen extends StatelessWidget {
                   children: [
                     _buildStepRow(
                       Icons.schedule_rounded,
-                      'Maintain Bedtime Regularity',
-                      'Going to bed within a 30-minute window continues to support baseline equilibrium.',
+                      'A regular bedtime',
+                      'Some people find a consistent bedtime helpful. This is general '
+                      'information, not advice based on your data.',
                     ),
                     const Divider(color: SenseColors.border, height: 20),
                     _buildStepRow(
                       Icons.self_improvement_rounded,
-                      'Pace Afternoon Demands',
-                      'Intentional 5-minute micro-breaks between high-effort tasks buffer acute load spikes.',
+                      'Short breaks',
+                      'Some people find short breaks between demanding tasks help them '
+                      'pace their day. This is general information, not a treatment.',
                     ),
                   ],
                 ),
@@ -162,7 +185,7 @@ class InsightDetailScreen extends StatelessWidget {
               const SizedBox(height: 32),
 
               SenseButton(
-                label: 'Back to Insights',
+                label: 'Back',
                 variant: SenseButtonVariant.secondary,
                 onPressed: () => Navigator.of(context).pop(),
               ),

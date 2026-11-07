@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sample_data_banner.dart';
+import '../widgets/sense_chips.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
+import '../widgets/sense_inputs.dart';
 
 class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
@@ -16,7 +19,6 @@ class _SleepScreenState extends State<SleepScreen> {
   int _sleepQuality = 4; // 1 to 5
   TimeOfDay _bedtime = const TimeOfDay(hour: 23, minute: 30);
   TimeOfDay _wakeTime = const TimeOfDay(hour: 7, minute: 0);
-  bool _isSaving = false;
 
   final List<double> _weekSleep = [7.2, 6.8, 7.5, 8.0, 6.5, 7.8, 7.5];
 
@@ -53,23 +55,25 @@ class _SleepScreenState extends State<SleepScreen> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Column(
+                    Expanded(
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Last Night\'s Rest',
+                          'Your entry (manual)',
                           style: SenseTypography.captionMedium.copyWith(
                             color: SenseColors.textSecondary,
                           ),
                         ),
                         Text(
-                          '${_sleepHours.toStringAsFixed(1)} Hours Logged',
+                          '${_sleepHours.toStringAsFixed(1)} hours',
                           style: SenseTypography.h3.copyWith(
                             color: SenseColors.navy900,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ],
                 ),
@@ -85,19 +89,14 @@ class _SleepScreenState extends State<SleepScreen> {
               SenseCard(
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('4.0 hrs', style: SenseTypography.caption),
-                        Text(
-                          '${_sleepHours.toStringAsFixed(1)} hrs',
-                          style: SenseTypography.h2.copyWith(
-                            color: SenseColors.blue800,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text('12.0 hrs', style: SenseTypography.caption),
-                      ],
+                    SenseSliderLabels(
+                      minLabel: '4.0 hrs',
+                      valueLabel: '${_sleepHours.toStringAsFixed(1)} hrs',
+                      maxLabel: '12.0 hrs',
+                      valueStyle: SenseTypography.h2.copyWith(
+                        color: SenseColors.blue800,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Slider(
                       value: _sleepHours,
@@ -113,65 +112,97 @@ class _SleepScreenState extends State<SleepScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Bedtime and Wake-up timing
-              Row(
-                children: [
-                  Expanded(
-                    child: SenseCard(
+              // Bedtime and Wake-up timing: side by side when roomy, stacked when
+              // narrow or text is large (so times never break mid-number).
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final bedtimeCard = SenseCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Bedtime', style: SenseTypography.caption),
                           const SizedBox(height: 6),
-                          InkWell(
-                            onTap: _pickBedtime,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.nightlight_round, size: 18, color: SenseColors.blue600),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _bedtime.format(context),
-                                  style: SenseTypography.labelBold.copyWith(
-                                    color: SenseColors.navy900,
-                                    fontSize: 15,
-                                  ),
+                          Semantics(
+                            button: true,
+                            label: 'Bedtime: ${_bedtime.format(context)}. Tap to change.',
+                            excludeSemantics: true,
+                            child: InkWell(
+                              onTap: _pickBedtime,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 44),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.nightlight_round, size: 18, color: SenseColors.blue600),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        _bedtime.format(context),
+                                        style: SenseTypography.labelBold.copyWith(
+                                          color: SenseColors.navy900,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SenseCard(
+                    );
+                  final wakeCard = SenseCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Wake Time', style: SenseTypography.caption),
                           const SizedBox(height: 6),
-                          InkWell(
-                            onTap: _pickWakeTime,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.wb_sunny_outlined, size: 18, color: SenseColors.cyan500),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _wakeTime.format(context),
-                                  style: SenseTypography.labelBold.copyWith(
-                                    color: SenseColors.navy900,
-                                    fontSize: 15,
-                                  ),
+                          Semantics(
+                            button: true,
+                            label: 'Wake time: ${_wakeTime.format(context)}. Tap to change.',
+                            excludeSemantics: true,
+                            child: InkWell(
+                              onTap: _pickWakeTime,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 44),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.wb_sunny_outlined, size: 18, color: SenseColors.cyan500),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        _wakeTime.format(context),
+                                        style: SenseTypography.labelBold.copyWith(
+                                          color: SenseColors.navy900,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
+                    );
+                  final stacked = constraints.maxWidth < 340 ||
+                      MediaQuery.textScalerOf(context).scale(1.0) > 1.15;
+                  if (stacked) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [bedtimeCard, const SizedBox(height: 12), wakeCard],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: bedtimeCard),
+                      const SizedBox(width: 12),
+                      Expanded(child: wakeCard),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
 
@@ -187,8 +218,14 @@ class _SleepScreenState extends State<SleepScreen> {
                   children: List.generate(5, (i) {
                     final rating = i + 1;
                     final isSelected = (_sleepQuality == rating);
-                    return GestureDetector(
+                    return Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: 'Rest quality $rating of 5',
+                      excludeSemantics: true,
+                      child: GestureDetector(
                       onTap: () => setState(() => _sleepQuality = rating),
+                      behavior: HitTestBehavior.opaque,
                       child: Column(
                         children: [
                           Icon(
@@ -206,6 +243,7 @@ class _SleepScreenState extends State<SleepScreen> {
                           ),
                         ],
                       ),
+                      ),
                     );
                   }),
                 ),
@@ -213,39 +251,60 @@ class _SleepScreenState extends State<SleepScreen> {
               const SizedBox(height: 24),
 
               // Recent 7-Day Sleep Trend
-              Text(
-                'Recent 7-Day Trend',
-                style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
+              SizedBox(
+                width: double.infinity, // lets spaceBetween reach the right edge
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Text(
+                      'Example 7-day sleep history',
+                      style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
+                    ),
+                    const SenseProvenanceBadge.sampleData(),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               SenseCard(
-                child: SizedBox(
-                  height: 60,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: List.generate(7, (i) {
-                      final h = _weekSleep[i];
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                // Fixed bar area; the label row below grows with text size.
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(7, (i) {
+                    final h = _weekSleep[i];
+                    return Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 16,
-                            height: (h / 10.0 * 45).clamp(8.0, 45.0),
-                            decoration: BoxDecoration(
-                              color: i == 6 ? SenseColors.blue600 : SenseColors.cyan300,
-                              borderRadius: SenseRadii.smBorder,
+                          SizedBox(
+                            height: 45,
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: Container(
+                                width: 16,
+                                height: (h / 10.0 * 45).clamp(8.0, 45.0),
+                                decoration: BoxDecoration(
+                                  color: i == 6 ? SenseColors.blue600 : SenseColors.cyan300,
+                                  borderRadius: SenseRadii.smBorder,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            '${h.toStringAsFixed(0)}h',
-                            style: SenseTypography.caption.copyWith(fontSize: 10),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '${h.toStringAsFixed(0)}h',
+                              maxLines: 1,
+                              style: SenseTypography.caption.copyWith(fontSize: 10),
+                            ),
                           ),
                         ],
-                      );
-                    }),
-                  ),
+                      ),
+                    );
+                  }),
                 ),
               ),
               const SizedBox(height: 32),
@@ -253,7 +312,6 @@ class _SleepScreenState extends State<SleepScreen> {
               SenseButton(
                 label: 'Save Sleep Record',
                 icon: Icons.save_rounded,
-                isLoading: _isSaving,
                 onPressed: _saveSleep,
               ),
               const SizedBox(height: 16),
@@ -275,18 +333,7 @@ class _SleepScreenState extends State<SleepScreen> {
   }
 
   void _saveSleep() {
-    setState(() => _isSaving = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sleep entry logged to local baseline.'),
-            backgroundColor: SenseColors.navy900,
-          ),
-        );
-        Navigator.of(context).pop();
-      }
-    });
+    // Persistence is not connected yet: report that honestly.
+    showPrototypeNotSavedMessage(context, 'sleep entry');
   }
 }

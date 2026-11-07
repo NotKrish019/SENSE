@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants/prototype_copy.dart';
 
 class SenseFilterChip extends StatelessWidget {
   final String label;
@@ -15,7 +16,12 @@ class SenseFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -40,6 +46,7 @@ class SenseFilterChip extends StatelessWidget {
                   color: SenseColors.textSecondary,
                 ),
         ),
+      ),
       ),
     );
   }
@@ -119,6 +126,12 @@ class SenseProvenanceBadge extends StatelessWidget {
     this.icon,
   });
 
+  /// Shared label for hard-coded illustrative values (see PrototypeCopy).
+  /// Never use it on information the user actually entered.
+  const SenseProvenanceBadge.sampleData({super.key})
+      : text = PrototypeCopy.sampleDataLabel,
+        icon = Icons.science_outlined;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -135,12 +148,14 @@ class SenseProvenanceBadge extends StatelessWidget {
             Icon(icon, size: 12, color: SenseColors.blue800),
             const SizedBox(width: 4),
           ],
-          Text(
-            text,
-            style: SenseTypography.caption.copyWith(
-              color: SenseColors.blue800,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              text,
+              style: SenseTypography.caption.copyWith(
+                color: SenseColors.blue800,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

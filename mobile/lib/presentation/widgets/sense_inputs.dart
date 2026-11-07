@@ -82,56 +82,134 @@ class SenseToggleSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget toggle = GestureDetector(
-      onTap: () => onChanged(!value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 48,
-        height: 28,
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          borderRadius: SenseRadii.pillBorder,
-          color: value ? SenseColors.cyan500 : const Color(0xFFD6E7F2),
+    // Visual states meet 3:1 against the white card: on = Electric Blue track
+    // (3.1:1) with white thumb; off = white track with a slate outline and
+    // slate thumb (5.1:1). State is also exposed to screen readers.
+    final track = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 48,
+      height: 28,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        borderRadius: SenseRadii.pillBorder,
+        color: value ? SenseColors.blue600 : SenseColors.white,
+        border: Border.all(
+          color: value ? SenseColors.blue600 : SenseColors.textMuted,
+          width: 1.5,
         ),
-        child: AnimatedAlign(
-          duration: const Duration(milliseconds: 200),
-          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-          child: Container(
-            width: 22,
-            height: 22,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: SenseColors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x33012F5F),
-                  offset: Offset(0, 1),
-                  blurRadius: 3,
-                ),
-              ],
-            ),
+      ),
+      child: AnimatedAlign(
+        duration: const Duration(milliseconds: 200),
+        alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          width: 19,
+          height: 19,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: value ? SenseColors.white : SenseColors.textMuted,
           ),
         ),
       ),
     );
 
-    if (label != null) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label!,
-            style: SenseTypography.body.copyWith(
-              color: SenseColors.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          toggle,
-        ],
-      );
-    }
+    // The whole row (label + track) is the touch target when labelled.
+    final content = label == null
+        ? track
+        : Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label!,
+                  style: SenseTypography.body.copyWith(
+                    color: SenseColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              track,
+            ],
+          );
 
-    return toggle;
+    return Semantics(
+      toggled: value,
+      label: label,
+      excludeSemantics: true,
+      onTap: () => onChanged(!value),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onChanged(!value),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Center(heightFactor: 1, child: content),
+        ),
+      ),
+    );
   }
 }
 
+
+/// Min / current value / max labels shown above a slider.
+///
+/// Normally one row (min · value · max). When the screen is narrow or text is
+/// large, the value moves to its own line and the min/max labels wrap as whole
+/// labels (never breaking mid-word or overlapping).
+class SenseSliderLabels extends StatelessWidget {
+  final String minLabel;
+  final String valueLabel;
+  final String maxLabel;
+  final TextStyle? valueStyle;
+
+  const SenseSliderLabels({
+    super.key,
+    required this.minLabel,
+    required this.valueLabel,
+    required this.maxLabel,
+    this.valueStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final value = Text(
+      valueLabel,
+      textAlign: TextAlign.center,
+      style: valueStyle ?? SenseTypography.labelBold.copyWith(color: SenseColors.blue800),
+    );
+    final min = Text(minLabel, style: SenseTypography.caption);
+    final max = Text(maxLabel, textAlign: TextAlign.end, style: SenseTypography.caption);
+    final scale = MediaQuery.textScalerOf(context).scale(1.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = scale >= 1.3 || constraints.maxWidth < 300;
+        if (stacked) {
+          return Column(
+            children: [
+              SizedBox(width: double.infinity, child: value),
+              const SizedBox(height: 4),
+              // Natural widths: if both ends don't fit on one line, the max
+              // label moves to its own line rather than breaking mid-word.
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 12,
+                  runSpacing: 2,
+                  children: [min, max],
+                ),
+              ),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: min),
+            const SizedBox(width: 4),
+            Expanded(flex: 2, child: value),
+            const SizedBox(width: 4),
+            Expanded(child: max),
+          ],
+        );
+      },
+    );
+  }
+}

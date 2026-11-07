@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
-import 'dashboard_screen.dart';
+import 'consent_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -18,24 +18,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<Map<String, dynamic>> _slides = [
     {
       'icon': Icons.insights_rounded,
-      'title': 'Understand Your Personal Equilibrium',
+      'title': 'Compared with you, not with averages',
       'body':
-          'SENSE models your unique historical baseline rather than comparing you to generic population averages. Observe how sleep, workload, and daily habits interact.',
-      'badge': 'Personalized Baseline Modeling',
+          'SENSE is being designed to compare your entries with your own history rather than '
+          'with population averages. Personal baselines are not calculated yet in this prototype.',
+      'badge': 'Research goal: personal baselines',
     },
     {
       'icon': Icons.tune_rounded,
       'title': 'Your Data, Your Voluntary Pace',
       'body':
-          'Every input is optional and separate. Whether you complete a 30-second check-in or track sleep, SENSE adapts gracefully without penalizing missing data.',
+          'Every input is optional and separate. Skipping an input will never be treated as a '
+          'sign of stress.',
       'badge': 'Optional Multi-Modality',
     },
     {
       'icon': Icons.lock_outline_rounded,
       'title': 'Privacy-First & Non-Clinical',
       'body':
-          'SENSE provides supportive well-being observations, not medical diagnoses. All personal data is encrypted locally with complete export and erasure rights.',
-      'badge': 'DPDP Act 2023 Compliant',
+          'SENSE is designed to offer supportive well-being observations, not medical diagnoses. '
+          'This early prototype does not save or share anything you enter; secure storage, '
+          'export and deletion will be built before any real data is collected.',
+      'badge': 'Non-clinical research prototype',
     },
   ];
 
@@ -75,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                   TextButton(
-                    onPressed: () => _navigateToDashboard(),
+                    onPressed: _openConsent,
                     child: Text(
                       'Skip',
                       style: SenseTypography.labelBold.copyWith(color: SenseColors.blue800),
@@ -83,19 +87,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ],
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
 
-              // Carousel Content
-              SizedBox(
-                height: 380,
+              // Carousel Content: takes all free space (was a fixed 380 px box),
+              // so larger text only scrolls when the screen genuinely runs out.
+              Expanded(
                 child: PageView.builder(
                   controller: _pageController,
                   onPageChanged: (idx) => setState(() => _currentPage = idx),
                   itemCount: _slides.length,
                   itemBuilder: (context, idx) {
                     final item = _slides[idx];
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    // Scrolls only if the text does not fit (e.g. large system
+                    // text size); otherwise stays centred as before.
+                    return Center(
+                      child: SingleChildScrollView(
+                        child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         SenseCard(
                           padding: const EdgeInsets.all(28),
@@ -124,7 +132,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           item['title'] as String,
                           style: SenseTypography.h2.copyWith(
-                            textAlign: TextAlign.center,
                             color: SenseColors.navy900,
                           ),
                           textAlign: TextAlign.center,
@@ -133,19 +140,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(
                           item['body'] as String,
                           style: SenseTypography.body.copyWith(
-                            textAlign: TextAlign.center,
                             color: SenseColors.textSecondary,
                             height: 1.45,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ],
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 16),
 
               // Page Indicators
               Row(
@@ -177,7 +185,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       curve: Curves.easeInOut,
                     );
                   } else {
-                    _navigateToDashboard();
+                    _openConsent();
                   }
                 },
               ),
@@ -189,9 +197,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  void _navigateToDashboard() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+  // Both "Skip" and "Get Started" lead to consent: no route bypasses it.
+  // push (not replace) keeps onboarding underneath, so Back from consent
+  // returns to the slide the user left instead of restarting onboarding.
+  void _openConsent() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ConsentScreen()),
     );
   }
 }

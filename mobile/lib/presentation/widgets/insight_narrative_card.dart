@@ -17,7 +17,7 @@ class InsightNarrativeCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isAlert ? AppTheme.alertAmber.withOpacity(0.5) : Colors.transparent,
+          color: isAlert ? SenseColors.warning.withOpacity(0.5) : Colors.transparent,
           width: 1.5,
         ),
       ),
@@ -30,7 +30,7 @@ class InsightNarrativeCard extends StatelessWidget {
               children: [
                 Icon(
                   isAlert ? Icons.info_outline_rounded : Icons.auto_awesome_rounded,
-                  color: isAlert ? AppTheme.alertAmber : AppTheme.primaryTeal,
+                  color: isAlert ? SenseColors.warning : SenseColors.blue600,
                   size: 22,
                 ),
                 const SizedBox(width: 8),
@@ -39,7 +39,7 @@ class InsightNarrativeCard extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: isAlert ? AppTheme.alertAmber : AppTheme.textDark,
+                    color: isAlert ? SenseColors.warning : SenseColors.textPrimary,
                   ),
                 ),
               ],
@@ -47,7 +47,7 @@ class InsightNarrativeCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               output.explanationNarrative,
-              style: const TextStyle(fontSize: 14, color: AppTheme.textDark, height: 1.45),
+              style: const TextStyle(fontSize: 14, color: SenseColors.textPrimary, height: 1.45),
             ),
             if (output.factorAttributions.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -55,7 +55,7 @@ class InsightNarrativeCard extends StatelessWidget {
               const SizedBox(height: 12),
               const Text(
                 'Contributing Factors Today:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMuted),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: SenseColors.textMuted),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -74,7 +74,7 @@ class InsightNarrativeCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: isElevated ? Colors.amber.shade900 : AppTheme.primaryTeal,
+                        color: isElevated ? Colors.amber.shade900 : SenseColors.blue600,
                       ),
                     ),
                   );

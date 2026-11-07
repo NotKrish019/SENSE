@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sample_data_banner.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
+import '../widgets/sense_inputs.dart';
 
 class WorkloadScreen extends StatefulWidget {
   const WorkloadScreen({super.key});
@@ -16,11 +18,6 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
   int _effortRating = 3; // 1 to 5
   int _deadlinesCount = 1;
   int _tasksCompleted = 4;
-  bool _isSaving = false;
-
-  double get _calculatedIndex {
-    return 0.5 * _mentalDemand + 0.5 * _effortRating + 0.2 * _deadlinesCount.clamp(0, 5);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,23 +52,26 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Column(
+                    Expanded(
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Estimated Workload Demand',
+                          'Your ratings (self-reported)',
                           style: SenseTypography.captionMedium.copyWith(
                             color: SenseColors.textSecondary,
                           ),
                         ),
                         Text(
-                          'Index: ${_calculatedIndex.toStringAsFixed(1)} / 6.0',
+                          'Demand $_mentalDemand/5 · Effort $_effortRating/5 · '
+                          '$_deadlinesCount deadline${_deadlinesCount == 1 ? '' : 's'}',
                           style: SenseTypography.h3.copyWith(
                             color: SenseColors.navy900,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ],
                 ),
@@ -80,7 +80,7 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
 
               // Mental Demand Rating
               Text(
-                'Mental Demand (NASA-TLX)',
+                'Mental demand (adapted from NASA-TLX)',
                 style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
               ),
               const SizedBox(height: 6),
@@ -92,16 +92,10 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
               SenseCard(
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('1 — Very Light', style: SenseTypography.caption),
-                        Text(
-                          '$_mentalDemand / 5',
-                          style: SenseTypography.labelBold.copyWith(color: SenseColors.blue800),
-                        ),
-                        Text('5 — Intense', style: SenseTypography.caption),
-                      ],
+                    SenseSliderLabels(
+                      minLabel: '1 — Very Light',
+                      valueLabel: '$_mentalDemand / 5',
+                      maxLabel: '5 — Intense',
                     ),
                     Slider(
                       value: _mentalDemand.toDouble(),
@@ -131,16 +125,10 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
               SenseCard(
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('1 — Minimal', style: SenseTypography.caption),
-                        Text(
-                          '$_effortRating / 5',
-                          style: SenseTypography.labelBold.copyWith(color: SenseColors.blue800),
-                        ),
-                        Text('5 — Exhausting', style: SenseTypography.caption),
-                      ],
+                    SenseSliderLabels(
+                      minLabel: '1 — Minimal',
+                      valueLabel: '$_effortRating / 5',
+                      maxLabel: '5 — Exhausting',
                     ),
                     Slider(
                       value: _effortRating.toDouble(),
@@ -163,26 +151,39 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
               ),
               const SizedBox(height: 8),
               SenseCard(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Label wraps; the stepper keeps its size. Icon buttons carry
+                // tooltips, which also serve as their screen-reader labels.
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       'Upcoming deliverables:',
                       style: SenseTypography.body,
                     ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
+                          tooltip: 'One fewer deadline',
                           icon: const Icon(Icons.remove_circle_outline, color: SenseColors.blue600),
                           onPressed: _deadlinesCount > 0
                               ? () => setState(() => _deadlinesCount--)
                               : null,
                         ),
-                        Text(
-                          '$_deadlinesCount',
-                          style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
+                        Semantics(
+                          liveRegion: true,
+                          label: '$_deadlinesCount deadlines',
+                          excludeSemantics: true,
+                          child: Text(
+                            '$_deadlinesCount',
+                            style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
+                          ),
                         ),
                         IconButton(
+                          tooltip: 'One more deadline',
                           icon: const Icon(Icons.add_circle_outline, color: SenseColors.blue600),
                           onPressed: () => setState(() => _deadlinesCount++),
                         ),
@@ -190,13 +191,13 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
                     ),
                   ],
                 ),
+                ),
               ),
               const SizedBox(height: 32),
 
               SenseButton(
                 label: 'Save Workload Rating',
                 icon: Icons.save_rounded,
-                isLoading: _isSaving,
                 onPressed: _saveWorkload,
               ),
               const SizedBox(height: 16),
@@ -208,18 +209,7 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
   }
 
   void _saveWorkload() {
-    setState(() => _isSaving = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Workload metrics added to personal baseline.'),
-            backgroundColor: SenseColors.navy900,
-          ),
-        );
-        Navigator.of(context).pop();
-      }
-    });
+    // Persistence is not connected yet: report that honestly.
+    showPrototypeNotSavedMessage(context, 'workload rating');
   }
 }

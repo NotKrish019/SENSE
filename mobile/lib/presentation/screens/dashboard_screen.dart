@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/constants/prototype_copy.dart';
 import '../widgets/quick_action_tile.dart';
 import '../widgets/stress_summary_card.dart';
 import '../widgets/insight_card.dart';
 import '../widgets/sense_chips.dart';
-import '../widgets/sense_navigation.dart';
 
 import 'check_in_screen.dart';
 import 'journal_screen.dart';
@@ -18,28 +19,22 @@ import 'settings_screen.dart';
 import 'design_showcase_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  /// Provided by MainShell to switch tabs instead of pushing duplicate
+  /// Insights/Profile screens. When null (standalone use), screens are pushed.
+  final VoidCallback? onOpenInsights;
+  final VoidCallback? onOpenProfile;
+
+  const DashboardScreen({super.key, this.onOpenInsights, this.onOpenProfile});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _currentNavIndex = 0;
-  String _selectedFilter = 'All';
 
-  final List<String> _filters = ['All', 'Sleep', 'Workload', 'Activity', 'Voice', 'Journal'];
 
   @override
   Widget build(BuildContext context) {
-    if (_currentNavIndex == 1) {
-      return const InsightsScreen();
-    } else if (_currentNavIndex == 2) {
-      return const DesignShowcaseScreen(); // Tools tab -> Design System Showcase
-    } else if (_currentNavIndex == 3) {
-      return const SettingsScreen();
-    }
-
     return Scaffold(
       backgroundColor: SenseColors.background,
       body: SafeArea(
@@ -51,11 +46,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header bar
+              // Header bar (brand block flexes so large text wraps, not overflows)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  Expanded(
+                    child: Row(
                     children: [
                       Container(
                         width: 36,
@@ -71,7 +66,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Column(
+                      Expanded(
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -89,28 +85,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         ],
+                        ),
                       ),
                     ],
+                    ),
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.style_outlined, color: SenseColors.blue600),
-                        tooltip: 'Design System Showcase',
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const DesignShowcaseScreen()),
-                          );
-                        },
-                      ),
+                      // Developer-only component gallery: compiled out of
+                      // release builds (kReleaseMode is a compile-time constant).
+                      if (!kReleaseMode)
+                        IconButton(
+                          icon: const Icon(Icons.style_outlined, color: SenseColors.blue600),
+                          tooltip: 'Design System Showcase (developer only)',
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const DesignShowcaseScreen()),
+                            );
+                          },
+                        ),
                       IconButton(
                         icon: const Icon(Icons.shield_outlined, color: SenseColors.navy900),
-                        tooltip: 'Privacy & Crisis Support',
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                          );
-                        },
+                        tooltip: 'Profile, privacy & support contacts',
+                        onPressed: widget.onOpenProfile ??
+                            () => Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                ),
                       ),
                     ],
                   ),
@@ -118,41 +119,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Filter Chips matching UI Toolkit Board
-              SizedBox(
-                height: 36,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _filters.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, i) {
-                    final f = _filters[i];
-                    return SenseFilterChip(
-                      label: f,
-                      isSelected: _selectedFilter == f,
-                      onTap: () => setState(() => _selectedFilter = f),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 18),
+              // (Filter chips removed: they highlighted on tap but filtered
+              // nothing, and no filtering behaviour is defined.)
 
               // Hero Current Stress Card (UI Toolkit Board)
+              // No baseline exists yet, so show an honest empty state rather
+              // than a stress level that was never calculated.
               StressSummaryCard(
-                statusText: 'Moderate',
-                scoreFraction: 0.52,
-                subtitle: 'Within your normal baseline corridor (Day 15/14 calibrated)',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const InsightsScreen()),
-                  );
-                },
+                statusText: PrototypeCopy.noBaselineTitle,
+                subtitle: PrototypeCopy.noBaselineDescription,
+                onTap: widget.onOpenInsights ??
+                    () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const InsightsScreen()),
+                        ),
               ),
               const SizedBox(height: 24),
 
-              // Section Heading: Quick Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Section Heading: Quick Actions (badge moves to a new line if needed)
+              SizedBox(
+                width: double.infinity, // lets spaceBetween reach the right edge
+                child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
                 children: [
                   Text(
                     'Record Daily Indicators',
@@ -164,16 +154,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SenseProvenanceBadge(text: 'Voluntary Inputs'),
                 ],
               ),
+              ),
               const SizedBox(height: 12),
 
-              // 3x2 Quick Action Tiles (matching UI Toolkit Board)
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.92,
+              // Quick Action Tiles (3x2 on phones; 2 columns when narrow/large text)
+              _ResponsiveTileGrid(
                 children: [
                   QuickActionTile(
                     label: 'Check-in',
@@ -234,8 +219,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
 
               // Section Heading: Recent Observation
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              SizedBox(
+                width: double.infinity, // lets spaceBetween reach the right edge
+                child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
                 children: [
                   Text(
                     'Observed Pattern',
@@ -244,29 +234,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SenseStatusTag(level: StressStatusLevel.good, customLabel: 'Aligned'),
+                  const SenseProvenanceBadge.sampleData(),
                 ],
+              ),
               ),
               const SizedBox(height: 12),
 
               // Insight Card (matching UI Toolkit Board)
               SenseInsightCard(
-                title: 'Insight',
+                title: 'Example observation',
                 narrative:
-                    'Your stress is lower today, likely due to better sleep and a lighter workload.',
-                provenance: 'Observed pattern',
+                    'Example: recorded sleep duration and self-reported stress '
+                    'changed during the same period. This is illustrative, not '
+                    'based on your data.',
+                provenance: PrototypeCopy.sampleDataLabel,
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const InsightDetailScreen(
-                        observationTitle: 'Sleep & Workload Co-occurrence',
-                        primaryFactor: 'Rest Consistency (+0.08h sleep)',
-                        evidenceSummary:
-                            'Your reported sleep duration of 7.8 hours and moderate workload rating coincided with a 18% reduction in subjective stress relative to your 14-day baseline.',
-                        timeRange: 'Oct 24 - Oct 30, 2026',
-                        whatCannotConclude:
-                            'This statistical co-occurrence reflects observed habits, not a clinical treatment or guaranteed causal relationship.',
-                      ),
+                      builder: (_) => const InsightDetailScreen(),
                     ),
                   );
                 },
@@ -276,15 +261,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: SenseBottomNavBar(
-        currentIndex: _currentNavIndex,
-        onTap: (idx) => setState(() => _currentNavIndex = idx),
-        onAddTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CheckInScreen()),
-          );
-        },
-      ),
+    );
+  }
+}
+
+/// Grid of quick-action tiles whose row height follows the content, so tiles
+/// grow with larger text instead of overflowing a fixed aspect ratio.
+/// Uses 2 columns on narrow widths or large text, otherwise 3.
+class _ResponsiveTileGrid extends StatelessWidget {
+  final List<Widget> children;
+  static const double _gap = 12;
+
+  const _ResponsiveTileGrid({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = (constraints.maxWidth < 300 || textScale >= 1.5) ? 2 : 3;
+        final rows = <Widget>[];
+        for (var i = 0; i < children.length; i += columns) {
+          final rowChildren = <Widget>[];
+          for (var c = 0; c < columns; c++) {
+            if (c > 0) rowChildren.add(const SizedBox(width: _gap));
+            final idx = i + c;
+            rowChildren.add(Expanded(
+              // Minimum keeps the toolkit's near-square tiles; content can
+              // still make the row taller at larger text sizes.
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 120),
+                child: idx < children.length ? children[idx] : const SizedBox.shrink(),
+              ),
+            ));
+          }
+          if (rows.isNotEmpty) rows.add(const SizedBox(height: _gap));
+          rows.add(IntrinsicHeight(
+            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: rowChildren),
+          ));
+        }
+        return Column(children: rows);
+      },
     );
   }
 }
