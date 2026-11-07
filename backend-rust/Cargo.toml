@@ -1,0 +1,23 @@
+[package]
+name = "backend-rust"
+version = "0.1.0"
+edition = "2021"
+authors = ["MindPulse Research Team <research@mindpulse.ai>"]
+description = "High-performance, memory-safe backend engine for MindPulse (SENSE)."
+
+[lib]
+name = "mindpulse_core"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[[bin]]
+name = "mindpulse-cli"
+path = "src/main.rs"
+
+[dependencies]
+rusqlite = { version = "0.31", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1.10"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.8", features = ["v4", "serde"] }
+clap = { version = "4.5", features = ["derive"] }

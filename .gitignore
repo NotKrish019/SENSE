@@ -1,0 +1,66 @@
+# Node / React Native / Expo
+node_modules/
+*/node_modules/
+.expo/
+*/.expo/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.metro-health-check*
+
+# Rust
+target/
+backend-rust/target/
+**/*.rs.bk
+*.pdb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Flutter / Dart
+.dart_tool/
+*/.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.ps1

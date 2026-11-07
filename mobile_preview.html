@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENSE — Interactive Mobile UI Prototype & Design System Simulator</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+    
+    /* Authoritative SENSE Neumorphic Dual Shadows */
+    .sense-shadow-card {
+      box-shadow: 0 6px 18px rgba(1, 47, 95, 0.08), -2px -2px 8px rgba(255, 255, 255, 0.85);
+    }
+    .sense-shadow-raised {
+      box-shadow: 0 8px 22px rgba(1, 47, 95, 0.12), -3px -3px 10px rgba(255, 255, 255, 0.9);
+    }
+    .sense-shadow-recessed {
+      box-shadow: inset 0 2px 4px rgba(1, 47, 95, 0.06);
+    }
+    .phone-shadow {
+      box-shadow: 0 25px 50px -12px rgba(1, 47, 95, 0.35), 0 0 0 12px #012F5F, 0 0 0 14px #02549B;
+    }
+  </style>
+</head>
+<body class="bg-[#081B33] text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 antialiased">
+
+  <!-- Header & Instructions Bar -->
+  <header class="max-w-xl w-full text-center mb-6">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#02549B]/50 border border-[#059BE0]/40 text-[#58E2F9] text-xs font-semibold uppercase tracking-wider mb-2">
+      <span class="w-2 h-2 rounded-full bg-[#07CCFC] animate-pulse"></span>
+      SENSE Mobile UI Prototype — Official Design System (design.md)
+    </div>
+    <h1 class="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white text-sm">≈</span>
+      SENSE Wellness Mobile UI
+    </h1>
+    <p class="text-xs text-slate-300 mt-1">
+      Faithfully implementing the SENSE UI Toolkit Board: White & pale-blue canvas (<code class="text-[#58E2F9]">#E6F6FF</code>), deep ocean blue (<code class="text-[#58E2F9]">#012F5F</code>), electric cyan (<code class="text-[#58E2F9]">#07CCFC</code>), and restrained neumorphic elevation.
+    </p>
+
+    <!-- Quick Navigation Bar for Interactive Testing -->
+    <div class="flex flex-wrap justify-center gap-1.5 mt-3 text-[11px]">
+      <button onclick="navigateTo('home')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Home</button>
+      <button onclick="navigateTo('checkin')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Check-in</button>
+      <button onclick="navigateTo('journal')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Journal</button>
+      <button onclick="navigateTo('sleep')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Sleep</button>
+      <button onclick="navigateTo('workload')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Workload</button>
+      <button onclick="navigateTo('voice')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Voice</button>
+      <button onclick="navigateTo('activity')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Activity</button>
+      <button onclick="navigateTo('insights')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Insights</button>
+      <button onclick="navigateTo('settings')" class="px-2.5 py-1 rounded-md bg-[#012F5F] text-[#58E2F9] hover:bg-[#02549B] transition border border-[#059BE0]/30 font-medium">Profile/Privacy</button>
+      <button onclick="navigateTo('showcase')" class="px-2.5 py-1 rounded-md bg-[#059BE0] text-white hover:bg-[#02549B] transition font-semibold shadow-xs">Toolkit Showcase</button>
+    </div>
+  </header>
+
+  <!-- Mobile Device Frame Container -->
+  <main class="relative w-full max-w-[390px] h-[780px] bg-[#E6F6FF] text-[#082B52] rounded-[44px] overflow-hidden phone-shadow flex flex-col border border-slate-700">
+
+    <!-- Top Status Bar & Dynamic Island -->
+    <div class="bg-[#E6F6FF]/90 backdrop-blur px-6 pt-3 pb-2 flex justify-between items-center text-xs font-semibold text-[#012F5F] border-b border-[#D6E7F2] select-none z-30">
+      <span>9:41</span>
+      <div class="w-24 h-4 bg-[#012F5F] rounded-full mx-auto"></div>
+      <div class="flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18.23c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l.62-.62C7.93 20.26 9.88 21 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/></svg>
+        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+      </div>
+    </div>
+
+    <!-- Permanent Out-of-Band Crisis Emergency Support Banner -->
+    <div class="bg-[#FFFBEB] border-b border-[#FDE68A] px-4 py-1.5 flex items-center justify-between z-20 shadow-xs">
+      <div class="flex items-center gap-2">
+        <span class="text-[#92400E] font-bold text-xs">⚠️ Need Support?</span>
+        <span class="text-[11px] text-[#78350F]">Free 24/7 Helplines</span>
+      </div>
+      <button onclick="openCrisisModal()" class="px-2.5 py-0.5 bg-[#B45309] hover:bg-[#92400E] text-white rounded-full text-[11px] font-bold shadow-xs transition">
+        Tele-MANAS (14416)
+      </button>
+    </div>
+
+    <!-- Scrollable Screen Content Container -->
+    <div id="screenContainer" class="flex-1 overflow-y-auto px-5 py-4 relative">
+
+      <!-- ================= SCREEN: SPLASH ================= -->
+      <div id="screen-splash" class="hidden min-h-full flex flex-col items-center justify-center text-center p-6 bg-[#012F5F] -m-5">
+        <div class="w-20 h-20 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-[#059BE0]/40 mb-6">
+          ≈
+        </div>
+        <h1 class="text-4xl font-extrabold tracking-widest text-white mb-2">SENSE</h1>
+        <p class="text-xs text-[#B0D9F7] max-w-xs mb-8">Personal Well-being & Multimodal Stress-Pattern Monitoring</p>
+        <button onclick="navigateTo('onboarding')" class="px-6 py-2.5 bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white rounded-full text-sm font-semibold shadow-md">
+          Begin Walkthrough →
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: ONBOARDING ================= -->
+      <div id="screen-onboarding" class="hidden flex flex-col justify-between min-h-[640px]">
+        <div>
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] flex items-center justify-center text-white text-xs font-bold">≈</span>
+              <span class="font-bold text-[#012F5F] tracking-wider text-sm">SENSE</span>
+            </div>
+            <button onclick="navigateTo('home')" class="text-xs font-semibold text-[#02549B]">Skip</button>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 sense-shadow-card border border-[#D6E7F2] text-center my-6">
+            <div class="w-16 h-16 rounded-2xl bg-[#E6F6FF] mx-auto flex items-center justify-center text-2xl text-[#059BE0] mb-4">
+              📊
+            </div>
+            <span class="inline-block px-3 py-1 rounded-full bg-[#D6EFFC] text-[#02549B] text-xs font-semibold mb-3">
+              Personalized Baseline Modeling
+            </span>
+            <h2 class="text-xl font-bold text-[#012F5F] mb-2">Understand Your Personal Equilibrium</h2>
+            <p class="text-xs text-[#496784] leading-relaxed">
+              SENSE models your unique historical baseline rather than comparing you to generic population averages. Observe how sleep, workload, and daily habits interact over time.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-center gap-1.5 mb-6">
+            <span class="w-6 h-2 rounded-full bg-[#059BE0]"></span>
+            <span class="w-2 h-2 rounded-full bg-[#C7E2F2]"></span>
+            <span class="w-2 h-2 rounded-full bg-[#C7E2F2]"></span>
+          </div>
+          <button onclick="navigateTo('home')" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+            Get Started →
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= SCREEN: HOME DASHBOARD ================= -->
+      <div id="screen-home" class="space-y-4">
+        <!-- Top App Bar -->
+        <div class="flex items-center justify-between pb-1">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] flex items-center justify-center text-white text-sm font-bold shadow-xs">
+              ≈
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-[#012F5F] tracking-wide">SENSE</h2>
+              <p class="text-[11px] text-[#496784]">Daily Well-being Overview</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="navigateTo('showcase')" title="Toolkit Showcase" class="p-1.5 text-[#059BE0] hover:bg-[#D6EFFC] rounded-full transition">
+              🎨
+            </button>
+            <button onclick="navigateTo('settings')" title="Settings" class="p-1.5 text-[#012F5F] hover:bg-[#D6EFFC] rounded-full transition">
+              ⚙️
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Chips (Matching UI Toolkit Board) -->
+        <div class="flex gap-2 overflow-x-auto pb-1 text-xs">
+          <button class="px-3.5 py-1.5 rounded-full bg-[#012F5F] text-white font-semibold shadow-xs">All</button>
+          <button onclick="navigateTo('sleep')" class="px-3.5 py-1.5 rounded-full bg-white text-[#496784] font-medium border border-[#D6E7F2] hover:bg-[#F4F7F7]">Sleep</button>
+          <button onclick="navigateTo('workload')" class="px-3.5 py-1.5 rounded-full bg-white text-[#496784] font-medium border border-[#D6E7F2] hover:bg-[#F4F7F7]">Workload</button>
+          <button onclick="navigateTo('activity')" class="px-3.5 py-1.5 rounded-full bg-white text-[#496784] font-medium border border-[#D6E7F2] hover:bg-[#F4F7F7]">Activity</button>
+          <button onclick="navigateTo('voice')" class="px-3.5 py-1.5 rounded-full bg-white text-[#496784] font-medium border border-[#D6E7F2] hover:bg-[#F4F7F7]">Voice</button>
+          <button onclick="navigateTo('journal')" class="px-3.5 py-1.5 rounded-full bg-white text-[#496784] font-medium border border-[#D6E7F2] hover:bg-[#F4F7F7]">Journal</button>
+        </div>
+
+        <!-- Current Stress Hero Card (Directly from UI Toolkit Board) -->
+        <div onclick="navigateTo('insights')" class="rounded-2xl bg-gradient-to-br from-[#02549B] to-[#012F5F] p-5 text-white shadow-md shadow-[#012F5F]/20 cursor-pointer hover:opacity-98 transition">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-[#07CCFC]/15 border border-[#07CCFC]/30 flex items-center justify-center text-[#58E2F9] text-base">
+                📈
+              </div>
+              <div>
+                <p class="text-xs text-[#B0D9F7]">Current Stress Pattern</p>
+                <h3 class="text-xl font-bold tracking-tight text-white">Moderate</h3>
+              </div>
+            </div>
+            <span class="text-[#B0D9F7] text-lg font-bold">›</span>
+          </div>
+
+          <!-- Cyan Progress Bar -->
+          <div class="mt-4">
+            <div class="h-2 w-full bg-[#07CCFC]/20 rounded-full overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-[#07CCFC] to-[#059BE0] rounded-full w-[52%] shadow-xs"></div>
+            </div>
+            <p class="text-[11px] text-[#C7E4F9] mt-2">Within your typical historical bounds (Day 15/14 calibrated)</p>
+          </div>
+        </div>
+
+        <!-- Section: Record Daily Indicators -->
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <h3 class="text-xs font-bold text-[#012F5F] uppercase tracking-wider">Record Indicators</h3>
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#D6EFFC] text-[#02549B]">Voluntary</span>
+          </div>
+
+          <!-- 3x2 Quick Actions Grid (Directly from UI Toolkit Board) -->
+          <div class="grid grid-cols-3 gap-2.5">
+            <button onclick="navigateTo('checkin')" class="bg-white p-3.5 rounded-xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center hover:bg-[#F4F7F7] transition">
+              <div class="w-10 h-10 rounded-lg bg-[#E6F6FF] flex items-center justify-center text-lg text-[#059BE0] mb-1.5 border border-[#CBE8FA]">
+                💙
+              </div>
+              <span class="text-xs font-bold text-[#012F5F]">Check-in</span>
+            </button>
+
+            <button onclick="navigateTo('journal')" class="bg-white p-3.5 rounded-xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center hover:bg-[#F4F7F7] transition">
+              <div class="w-10 h-10 rounded-lg bg-[#E6F6FF] flex items-center justify-center text-lg text-[#059BE0] mb-1.5 border border-[#CBE8FA]">
+                📖
+              </div>
+              <span class="text-xs font-bold text-[#012F5F]">Journal</span>
+            </button>
+
+            <button onclick="navigateTo('sleep')" class="bg-white p-3.5 rounded-xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center hover:bg-[#F4F7F7] transition">
+              <div class="w-10 h-10 rounded-lg bg-[#E6F6FF] flex items-center justify-center text-lg text-[#059BE0] mb-1.5 border border-[#CBE8FA]">
+                🌙
+              </div>
+              <span class="text-xs font-bold text-[#012F5F]">Sleep</span>
+            </button>
+
+            <button onclick="navigateTo('workload')" class="bg-white p-3.5 rounded-xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center hover:bg-[#F4F7F7] transition">
+              <div class="w-10 h-10 rounded-lg bg-[#E6F6FF] flex items-center justify-center text-lg text-[#059BE0] mb-1.5 border border-[#CBE8FA]">
+                🥞
+              </div>
+              <span class="text-xs font-bold text-[#012F5F]">Workload</span>
+            </button>
+
+            <button onclick="navigateTo('voice')" class="bg-white p-3.5 rounded-xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center hover:bg-[#F4F7F7] transition">
+              <div class="w-10 h-10 rounded-lg bg-[#E6F6FF] flex items-center justify-center text-lg text-[#059BE0] mb-1.5 border border-[#CBE8FA]">
+                🎙️
+              </div>
+              <span class="text-xs font-bold text-[#012F5F]">Voice</span>
+            </button>
+
+            <button onclick="navigateTo('activity')" class="bg-white p-3.5 rounded-xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center hover:bg-[#F4F7F7] transition">
+              <div class="w-10 h-10 rounded-lg bg-[#E6F6FF] flex items-center justify-center text-lg text-[#059BE0] mb-1.5 border border-[#CBE8FA]">
+                🏃
+              </div>
+              <span class="text-xs font-bold text-[#012F5F]">Activity</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Section: Recent Insight Card (Directly from UI Toolkit Board) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold text-[#012F5F] uppercase tracking-wider">Observed Pattern</h3>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#F4F7F7] border border-[#D6E7F2] text-[#087F6E]">● Aligned</span>
+          </div>
+
+          <div onclick="openInsightDetail()" class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] cursor-pointer hover:bg-[#F8FAFC] transition">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-full bg-[#E6F8FF] border border-[#BCE7FD] flex items-center justify-center text-xs text-[#059BE0]">💡</span>
+                <span class="font-bold text-xs text-[#012F5F]">Insight</span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#E6F6FF] text-[#02549B]">Observed pattern</span>
+            </div>
+            <p class="text-xs text-[#496784] leading-relaxed">
+              Your stress is lower today, likely due to better sleep and a lighter workload.
+            </p>
+            <div class="mt-3 flex items-center text-[11px] font-bold text-[#059BE0]">
+              <span>View observation details</span>
+              <span class="ml-1">→</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCREEN: DAILY CHECK-IN ================= -->
+      <div id="screen-checkin" class="hidden space-y-5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+            <h2 class="text-base font-bold text-[#012F5F]">Daily Check-in</h2>
+          </div>
+          <span class="text-xs font-semibold text-[#02549B]">Step 1 of 2</span>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-bold text-[#012F5F]">How are you feeling right now?</h3>
+          <p class="text-xs text-[#496784] mt-0.5">Select the option that best reflects your mood valence.</p>
+        </div>
+
+        <!-- 5-Mood Grid (Matching UI Toolkit Board) -->
+        <div class="grid grid-cols-5 gap-2">
+          <button onclick="selectMood(1)" id="mood-1" class="mood-btn p-2 rounded-xl bg-white border border-[#D6E7F2] flex flex-col items-center hover:bg-[#F4F7F7] transition">
+            <span class="text-2xl">😔</span>
+            <span class="text-[10px] font-medium text-[#496784] mt-1">Very Low</span>
+          </button>
+          <button onclick="selectMood(2)" id="mood-2" class="mood-btn p-2 rounded-xl bg-white border border-[#D6E7F2] flex flex-col items-center hover:bg-[#F4F7F7] transition">
+            <span class="text-2xl">🙁</span>
+            <span class="text-[10px] font-medium text-[#496784] mt-1">Low</span>
+          </button>
+          <button onclick="selectMood(3)" id="mood-3" class="mood-btn p-2 rounded-xl bg-[#012F5F] text-white border border-[#012F5F] flex flex-col items-center transition shadow-xs">
+            <span class="text-2xl">😐</span>
+            <span class="text-[10px] font-bold text-white mt-1">Neutral</span>
+          </button>
+          <button onclick="selectMood(4)" id="mood-4" class="mood-btn p-2 rounded-xl bg-white border border-[#D6E7F2] flex flex-col items-center hover:bg-[#F4F7F7] transition">
+            <span class="text-2xl">🙂</span>
+            <span class="text-[10px] font-medium text-[#496784] mt-1">Good</span>
+          </button>
+          <button onclick="selectMood(5)" id="mood-5" class="mood-btn p-2 rounded-xl bg-white border border-[#D6E7F2] flex flex-col items-center hover:bg-[#F4F7F7] transition">
+            <span class="text-2xl">😄</span>
+            <span class="text-[10px] font-medium text-[#496784] mt-1">Great</span>
+          </button>
+        </div>
+
+        <!-- Perceived Stress Slider -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-[#012F5F]">Perceived Stress Level</span>
+            <span id="stressDisplay" class="text-xs font-bold text-[#02549B]">Score: 2 / 5</span>
+          </div>
+          <input type="range" id="stressSlider" min="1" max="5" value="2" oninput="updateStress(this.value)" class="w-full accent-[#059BE0] cursor-pointer">
+          <div class="flex justify-between text-[10px] text-[#607B93] mt-1">
+            <span>1 (Relaxed)</span>
+            <span>3 (Moderate)</span>
+            <span>5 (Very High)</span>
+          </div>
+        </div>
+
+        <!-- Motivation Level -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-[#012F5F]">Energy & Motivation</span>
+            <span id="energyDisplay" class="text-xs font-bold text-[#02549B]">Rating: 3 / 5</span>
+          </div>
+          <input type="range" id="energySlider" min="1" max="5" value="3" oninput="updateEnergy(this.value)" class="w-full accent-[#059BE0] cursor-pointer">
+          <div class="flex justify-between text-[10px] text-[#607B93] mt-1">
+            <span>Low Energy</span>
+            <span>High Energy</span>
+          </div>
+        </div>
+
+        <button onclick="saveCheckIn()" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+          Save Daily Check-in
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: JOURNAL ================= -->
+      <div id="screen-journal" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+            <h2 class="text-base font-bold text-[#012F5F]">Daily Journal</h2>
+          </div>
+          <button onclick="document.getElementById('journalText').value = ''; updateWordCount();" class="text-xs text-[#B42332] font-semibold">Clear</button>
+        </div>
+
+        <!-- Live Crisis Interceptor Banner (Hidden until keyword typed) -->
+        <div id="crisisAlertBanner" class="hidden p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900 space-y-1">
+          <div class="flex items-center gap-1.5 font-bold text-red-700">
+            <span>🚨</span>
+            <span>Support is Available Right Now</span>
+          </div>
+          <p class="text-[11px] leading-relaxed">
+            You are not alone. Free, confidential support is available 24/7:<br>
+            • <b>Tele-MANAS</b>: 14416 or 1800-891-4416<br>
+            • <b>KIRAN Mental Health</b>: 1800-599-0019
+          </p>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-[#D6E7F2] text-xs text-[#496784] flex items-center gap-2">
+          <span>✍️</span>
+          <span>What moments, challenges, or thoughts stood out for you today?</span>
+        </div>
+
+        <!-- Journal Text Area -->
+        <div class="bg-white rounded-2xl p-4 sense-shadow-recessed border border-[#D6E7F2]">
+          <textarea id="journalText" oninput="checkJournalText(this.value)" rows="7" placeholder="Write freely. Text is analyzed on-device to extract general affective tone. Raw entries are never sent to external LLMs..." class="w-full text-xs text-[#082B52] bg-transparent focus:outline-none resize-none leading-relaxed"></textarea>
+          <div class="border-t border-[#D6E7F2] pt-2 mt-2 flex justify-between items-center text-[10px] text-[#607B93]">
+            <span id="journalCount">0 words • 0 chars</span>
+            <span class="text-[#087F6E] font-semibold">🔒 Encrypted on-device</span>
+          </div>
+        </div>
+
+        <button onclick="saveJournal()" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+          Save Reflection
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: SLEEP ================= -->
+      <div id="screen-sleep" class="hidden space-y-4">
+        <div class="flex items-center gap-2">
+          <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+          <h2 class="text-base font-bold text-[#012F5F]">Sleep Record</h2>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] flex items-center gap-3">
+          <span class="text-2xl text-[#059BE0]">🌙</span>
+          <div>
+            <p class="text-xs text-[#496784]">Last Night's Rest</p>
+            <h3 id="sleepDisplay" class="text-lg font-bold text-[#012F5F]">7.5 Hours Logged</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-[#012F5F]">Sleep Duration</span>
+            <span id="sleepHoursVal" class="font-bold text-[#02549B]">7.5 hrs</span>
+          </div>
+          <input type="range" id="sleepSlider" min="4" max="12" step="0.25" value="7.5" oninput="updateSleep(this.value)" class="w-full accent-[#059BE0] cursor-pointer">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="bg-white p-3 rounded-xl border border-[#D6E7F2]">
+            <p class="text-[#496784]">Bedtime</p>
+            <p class="font-bold text-[#012F5F] text-sm mt-0.5">11:30 PM</p>
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-[#D6E7F2]">
+            <p class="text-[#496784]">Wake Time</p>
+            <p class="font-bold text-[#012F5F] text-sm mt-0.5">07:00 AM</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+          <p class="text-xs font-bold text-[#012F5F] mb-2">Subjective Rest Quality</p>
+          <div class="flex justify-around text-xl">
+            <button onclick="setQuality(1)" class="quality-star text-amber-400">★</button>
+            <button onclick="setQuality(2)" class="quality-star text-amber-400">★</button>
+            <button onclick="setQuality(3)" class="quality-star text-amber-400">★</button>
+            <button onclick="setQuality(4)" class="quality-star text-amber-400">★</button>
+            <button onclick="setQuality(5)" class="quality-star text-slate-300">★</button>
+          </div>
+        </div>
+
+        <button onclick="saveGeneric('Sleep entry logged to personal baseline.')" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+          Save Sleep Entry
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: WORKLOAD ================= -->
+      <div id="screen-workload" class="hidden space-y-4">
+        <div class="flex items-center gap-2">
+          <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+          <h2 class="text-base font-bold text-[#012F5F]">Workload & Demands</h2>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] flex items-center gap-3">
+          <span class="text-2xl text-[#059BE0]">🥞</span>
+          <div>
+            <p class="text-xs text-[#496784]">Estimated Workload Index</p>
+            <h3 id="workloadIndexDisplay" class="text-lg font-bold text-[#012F5F]">Index: 3.2 / 6.0</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-[#012F5F]">Mental Demand (NASA-TLX)</span>
+            <span id="mentalDisplay" class="font-bold text-[#02549B]">Rating: 3 / 5</span>
+          </div>
+          <input type="range" id="mentalSlider" min="1" max="5" value="3" oninput="updateWorkload()" class="w-full accent-[#059BE0] cursor-pointer">
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-[#012F5F]">Effort Invested</span>
+            <span id="effortDisplay" class="font-bold text-[#02549B]">Rating: 3 / 5</span>
+          </div>
+          <input type="range" id="effortSlider" min="1" max="5" value="3" oninput="updateWorkload()" class="w-full accent-[#059BE0] cursor-pointer">
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] flex justify-between items-center text-xs">
+          <span class="font-bold text-[#012F5F]">Impending Deadlines (Next 48h)</span>
+          <div class="flex items-center gap-3">
+            <button onclick="changeDeadline(-1)" class="w-7 h-7 rounded-full bg-[#E6F6FF] text-[#059BE0] font-bold border border-[#D6E7F2]">-</button>
+            <span id="deadlinesVal" class="font-bold text-[#012F5F] text-sm">1</span>
+            <button onclick="changeDeadline(1)" class="w-7 h-7 rounded-full bg-[#E6F6FF] text-[#059BE0] font-bold border border-[#D6E7F2]">+</button>
+          </div>
+        </div>
+
+        <button onclick="saveGeneric('Workload metrics recorded to baseline.')" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+          Save Workload Rating
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: VOICE PROTOTYPE ================= -->
+      <div id="screen-voice" class="hidden space-y-4">
+        <div class="flex items-center gap-2">
+          <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+          <h2 class="text-base font-bold text-[#012F5F]">Voice Check-in (Optional)</h2>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+          <div class="flex items-center gap-2 text-xs font-bold text-[#087F6E] mb-1">
+            <span>🛡️</span>
+            <span>Zero Background Recording</span>
+          </div>
+          <p class="text-[11px] text-[#496784] leading-relaxed">
+            Voice prosody analysis investigates acoustic pitch variability and pause ratio. Tap-to-record only. Raw audio is converted to non-reconstructible mathematical features on-device.
+          </p>
+        </div>
+
+        <div class="text-center py-6">
+          <p id="voiceStatus" class="text-xs font-bold text-[#012F5F] mb-4">Tap microphone to record prompt</p>
+          <button id="voiceMicBtn" onclick="toggleVoiceRecording()" class="w-20 h-20 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white text-3xl shadow-lg shadow-[#059BE0]/30 hover:scale-105 transition mx-auto flex items-center justify-center">
+            🎙️
+          </button>
+          <div id="voiceWaveform" class="hidden flex items-center justify-center gap-1 mt-4 h-8">
+            <span class="w-1 h-3 bg-[#07CCFC] rounded-full animate-bounce"></span>
+            <span class="w-1 h-6 bg-[#059BE0] rounded-full animate-bounce delay-75"></span>
+            <span class="w-1 h-4 bg-[#07CCFC] rounded-full animate-bounce delay-150"></span>
+            <span class="w-1 h-7 bg-[#02549B] rounded-full animate-bounce delay-100"></span>
+            <span class="w-1 h-3 bg-[#07CCFC] rounded-full animate-bounce"></span>
+          </div>
+        </div>
+
+        <div class="bg-[#F4F7F7] p-3 rounded-xl border border-[#D6E7F2] text-[11px] text-[#496784] italic text-center">
+          "Describe three neutral tasks you accomplished today and how rested you feel."
+        </div>
+
+        <button onclick="saveGeneric('Voice acoustic features extracted locally.')" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+          Save Acoustic Sample
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: ACTIVITY PROTOTYPE ================= -->
+      <div id="screen-activity" class="hidden space-y-4">
+        <div class="flex items-center gap-2">
+          <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+          <h2 class="text-base font-bold text-[#012F5F]">Physical Activity</h2>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] flex items-center gap-3">
+          <span class="text-2xl text-[#059BE0]">🏃</span>
+          <div>
+            <p class="text-xs text-[#496784]">Daily Movement</p>
+            <h3 id="activityDisplay" class="text-lg font-bold text-[#012F5F]">6,800 Steps • 35 Active Mins</h3>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-[#012F5F]">Daily Step Count</span>
+            <span id="stepsVal" class="font-bold text-[#02549B]">6,800 steps</span>
+          </div>
+          <input type="range" id="stepSlider" min="1000" max="20000" step="500" value="6800" oninput="updateActivity()" class="w-full accent-[#059BE0] cursor-pointer">
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-[#012F5F]">Active Exercise Minutes</span>
+            <span id="activeMinVal" class="font-bold text-[#02549B]">35 mins</span>
+          </div>
+          <input type="range" id="activeMinSlider" min="0" max="120" step="5" value="35" oninput="updateActivity()" class="w-full accent-[#059BE0] cursor-pointer">
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-[#D6E7F2] text-[11px] text-[#496784] flex items-center justify-between">
+          <span>Auto-sync via Health Connect</span>
+          <span class="px-2 py-0.5 rounded bg-[#D6EFFC] text-[#02549B] font-bold text-[10px]">Optional (Phase 3)</span>
+        </div>
+
+        <button onclick="saveGeneric('Activity indicators added to baseline.')" class="w-full py-3.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white font-semibold text-sm shadow-md hover:opacity-95 transition">
+          Save Activity Entry
+        </button>
+      </div>
+
+      <!-- ================= SCREEN: INSIGHTS & CHARTS ================= -->
+      <div id="screen-insights" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-[#012F5F]">Longitudinal Insights</h2>
+          <span class="text-[11px] font-semibold text-[#02549B] bg-[#D6EFFC] px-2 py-0.5 rounded">Oct 24 - 30</span>
+        </div>
+
+        <!-- Period Toggle -->
+        <div class="flex bg-white rounded-full p-1 border border-[#D6E7F2] text-xs">
+          <button class="flex-1 py-1 rounded-full text-[#496784] font-medium">Day</button>
+          <button class="flex-1 py-1 rounded-full bg-[#012F5F] text-white font-bold shadow-xs">Week</button>
+          <button class="flex-1 py-1 rounded-full text-[#496784] font-medium">Month</button>
+        </div>
+
+        <!-- Spline Trend Chart (Matching UI Toolkit Board) -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <h3 class="text-xs font-bold text-[#012F5F]">Stress Trend</h3>
+              <p class="text-xs font-bold text-[#087F6E] mt-0.5">↓ 18% <span class="font-normal text-[#496784]">Lower than yesterday</span></p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#E6F6FF] text-[#02549B]">Observed pattern</span>
+          </div>
+
+          <!-- SVG Spline Curve -->
+          <div class="h-20 w-full mt-2">
+            <svg class="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#07CCFC" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#E6F6FF" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <path d="M 0 50 Q 50 60 100 45 T 200 20 T 300 55 L 300 80 L 0 80 Z" fill="url(#chartGrad)"/>
+              <path d="M 0 50 Q 50 60 100 45 T 200 20 T 300 55" fill="none" stroke="#07CCFC" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="300" cy="55" r="4" fill="#059BE0"/>
+              <circle cx="300" cy="55" r="2" fill="#FFFFFF"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- 2-Column: Weekly Stress Bars & Donut Sleep (Matching UI Toolkit Board) -->
+        <div class="grid grid-cols-5 gap-2.5">
+          <!-- Weekly Stress Bars -->
+          <div class="col-span-3 bg-white p-3.5 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+            <h4 class="text-[11px] font-bold text-[#012F5F] mb-3">Weekly Stress</h4>
+            <div class="flex items-end justify-between h-16 pt-2">
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-6 bg-[#58E2F9] rounded-sm"></div>
+                <span class="text-[9px] text-[#496784]">Mon</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-8 bg-[#58E2F9] rounded-sm"></div>
+                <span class="text-[9px] text-[#496784]">Tue</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-11 bg-[#58E2F9] rounded-sm"></div>
+                <span class="text-[9px] text-[#496784]">Wed</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-9 bg-[#58E2F9] rounded-sm"></div>
+                <span class="text-[9px] text-[#496784]">Thu</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-13 bg-[#059BE0] rounded-sm"></div>
+                <span class="text-[9px] font-bold text-[#012F5F]">Fri</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-7 bg-[#58E2F9] rounded-sm"></div>
+                <span class="text-[9px] text-[#496784]">Sat</span>
+              </div>
+              <div class="flex flex-col items-center gap-1">
+                <div class="w-2.5 h-12 bg-[#58E2F9] rounded-sm"></div>
+                <span class="text-[9px] text-[#496784]">Sun</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sleep Quality Donut -->
+          <div class="col-span-2 bg-white p-3.5 rounded-2xl sense-shadow-card border border-[#D6E7F2] flex flex-col items-center justify-center text-center">
+            <div class="relative w-14 h-14 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-[#D6EFFC]" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="text-[#059BE0]" stroke-dasharray="72, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <span class="absolute font-bold text-xs text-[#012F5F]">72%</span>
+            </div>
+            <span class="text-[10px] font-semibold text-[#496784] mt-2 leading-tight">Sleep Quality</span>
+          </div>
+        </div>
+
+        <!-- Factor Attribution Breakdown -->
+        <div onclick="openInsightDetail()" class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] cursor-pointer hover:bg-[#F8FAFC] transition">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-bold text-[#012F5F]">Factor Attribution</span>
+            <span class="text-[10px] text-[#059BE0] font-bold">Details ›</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-[#496784]">Sleep Regularity & Rest</span>
+                <span class="font-bold text-[#012F5F]">42%</span>
+              </div>
+              <div class="h-1.5 w-full bg-[#E2F2FC] rounded-full overflow-hidden">
+                <div class="h-full bg-[#059BE0] rounded-full w-[42%]"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-[#496784]">Workload & Deadlines</span>
+                <span class="font-bold text-[#012F5F]">28%</span>
+              </div>
+              <div class="h-1.5 w-full bg-[#E2F2FC] rounded-full overflow-hidden">
+                <div class="h-full bg-[#07CCFC] rounded-full w-[28%]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SCREEN: SETTINGS & PRIVACY ================= -->
+      <div id="screen-settings" class="hidden space-y-4">
+        <div class="flex items-center gap-2">
+          <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+          <h2 class="text-base font-bold text-[#012F5F]">Profile & Privacy</h2>
+        </div>
+
+        <!-- Profile Box -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] flex items-center gap-3">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] flex items-center justify-center text-white text-lg font-bold">
+            👤
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-[#012F5F]">Participant Profile</h3>
+            <p class="text-[11px] text-[#496784]">ID: usr_8f3d4a92 (Pseudonymous)</p>
+            <p class="text-[11px] font-semibold text-[#087F6E]">● Calibrated (Day 15/14)</p>
+          </div>
+        </div>
+
+        <!-- Modality Consent Toggles -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-3">
+          <h4 class="text-xs font-bold text-[#012F5F] uppercase tracking-wider">Granular Consent</h4>
+          <label class="flex items-center justify-between text-xs cursor-pointer">
+            <span class="text-[#082B52]">M1: Structured Check-ins</span>
+            <input type="checkbox" checked class="accent-[#07CCFC] w-4 h-4">
+          </label>
+          <label class="flex items-center justify-between text-xs cursor-pointer">
+            <span class="text-[#082B52]">M2: Daily Journal</span>
+            <input type="checkbox" checked class="accent-[#07CCFC] w-4 h-4">
+          </label>
+          <label class="flex items-center justify-between text-xs cursor-pointer">
+            <span class="text-[#082B52]">M3: Sleep Tracking</span>
+            <input type="checkbox" checked class="accent-[#07CCFC] w-4 h-4">
+          </label>
+          <label class="flex items-center justify-between text-xs cursor-pointer">
+            <span class="text-[#082B52]">M4: Workload Ratings</span>
+            <input type="checkbox" checked class="accent-[#07CCFC] w-4 h-4">
+          </label>
+          <label class="flex items-center justify-between text-xs cursor-pointer">
+            <span class="text-[#082B52]">M5: Voice Audio (Opt-in)</span>
+            <input type="checkbox" class="accent-[#07CCFC] w-4 h-4">
+          </label>
+        </div>
+
+        <!-- DPDP Act Rights -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <h4 class="text-xs font-bold text-[#012F5F] uppercase tracking-wider">DPDP Act 2023 Rights</h4>
+          <button onclick="exportDataJson()" class="w-full text-left py-2 border-b border-[#D6E7F2] flex justify-between items-center text-xs text-[#059BE0] font-semibold">
+            <span>📥 Export Personal Records (JSON)</span>
+            <span>›</span>
+          </button>
+          <button onclick="purgeData()" class="w-full text-left py-2 flex justify-between items-center text-xs text-[#B42332] font-semibold">
+            <span>🗑️ Permanently Erase All Data</span>
+            <span>›</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= SCREEN: TOOLKIT SHOWCASE ================= -->
+      <div id="screen-showcase" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <button onclick="navigateTo('home')" class="text-lg text-[#012F5F]">←</button>
+            <h2 class="text-base font-bold text-[#012F5F]">SENSE UI Toolkit Board</h2>
+          </div>
+          <span class="text-[10px] bg-[#D6EFFC] text-[#02549B] px-2 py-0.5 rounded font-bold">Showcase</span>
+        </div>
+
+        <!-- Swatches -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2]">
+          <h4 class="text-xs font-bold text-[#012F5F] mb-2.5">Authoritative Colour Tokens</h4>
+          <div class="grid grid-cols-4 gap-1.5 text-center text-[10px]">
+            <div class="p-2 rounded-lg bg-[#012F5F] text-white font-bold">Navy<br>#012F5F</div>
+            <div class="p-2 rounded-lg bg-[#02549B] text-white font-bold">Blue<br>#02549B</div>
+            <div class="p-2 rounded-lg bg-[#059BE0] text-white font-bold">Accent<br>#059BE0</div>
+            <div class="p-2 rounded-lg bg-[#07CCFC] text-[#012F5F] font-bold">Cyan<br>#07CCFC</div>
+            <div class="p-2 rounded-lg bg-[#58E2F9] text-[#012F5F] font-bold">Soft Cyan<br>#58E2F9</div>
+            <div class="p-2 rounded-lg bg-[#E6F6FF] text-[#012F5F] font-bold border border-[#D6E7F2]">Canvas<br>#E6F6FF</div>
+            <div class="p-2 rounded-lg bg-[#F4F7F7] text-[#012F5F] font-bold border border-[#D6E7F2]">Surface<br>#F4F7F7</div>
+            <div class="p-2 rounded-lg bg-[#FFFFFF] text-[#012F5F] font-bold border border-[#D6E7F2]">White<br>#FFFFFF</div>
+          </div>
+        </div>
+
+        <!-- Buttons Showcase -->
+        <div class="bg-white p-4 rounded-2xl sense-shadow-card border border-[#D6E7F2] space-y-2">
+          <h4 class="text-xs font-bold text-[#012F5F] mb-1">Button Hierarchy</h4>
+          <button class="w-full py-2.5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white text-xs font-semibold shadow-xs">
+            Primary Action (Get Started →)
+          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="py-2 rounded-full bg-white text-[#012F5F] text-xs font-semibold border border-[#D6E7F2] sense-shadow-card">
+              Secondary (Save)
+            </button>
+            <button class="py-2 rounded-full bg-transparent text-[#059BE0] text-xs font-semibold border border-[#059BE0]">
+              Outline (+ Add)
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Navigation Bar (Matching UI Toolkit Board) -->
+    <nav class="bg-white border-t border-[#D6E7F2] px-6 py-2 flex items-center justify-between text-xs z-30 select-none">
+      <button onclick="navigateTo('home')" id="nav-home" class="flex flex-col items-center gap-0.5 text-[#059BE0] font-bold">
+        <span class="text-base">🏠</span>
+        <span class="text-[10px]">Home</span>
+      </button>
+
+      <button onclick="navigateTo('insights')" id="nav-insights" class="flex flex-col items-center gap-0.5 text-[#496784] hover:text-[#059BE0] transition font-medium">
+        <span class="text-base">📊</span>
+        <span class="text-[10px]">Insights</span>
+      </button>
+
+      <!-- Center Elevated Add Action -->
+      <button onclick="navigateTo('checkin')" class="w-11 h-11 -mt-5 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white flex items-center justify-center text-xl font-bold shadow-lg shadow-[#059BE0]/40 hover:scale-105 transition">
+        +
+      </button>
+
+      <button onclick="navigateTo('showcase')" id="nav-tools" class="flex flex-col items-center gap-0.5 text-[#496784] hover:text-[#059BE0] transition font-medium">
+        <span class="text-base">🎨</span>
+        <span class="text-[10px]">Tools</span>
+      </button>
+
+      <button onclick="navigateTo('settings')" id="nav-profile" class="flex flex-col items-center gap-0.5 text-[#496784] hover:text-[#059BE0] transition font-medium">
+        <span class="text-base">👤</span>
+        <span class="text-[10px]">Profile</span>
+      </button>
+    </nav>
+  </main>
+
+  <!-- Interactive Crisis Modal -->
+  <div id="crisisModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-slate-900 shadow-2xl border border-red-200">
+      <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-2xl mx-auto mb-3">
+        🆘
+      </div>
+      <h3 class="text-lg font-bold text-center text-[#991B1B]">24/7 Verified Crisis Support</h3>
+      <p class="text-xs text-slate-600 text-center mt-1 mb-4 leading-relaxed">
+        Free, confidential, and immediate support from licensed professionals:
+      </p>
+
+      <div class="space-y-2 text-xs">
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-800">Tele-MANAS (Govt of India)</p>
+          <p class="text-[#059BE0] font-bold text-sm">📞 14416 or 1800-891-4416</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-800">KIRAN Mental Health Helpline</p>
+          <p class="text-[#059BE0] font-bold text-sm">📞 1800-599-0019</p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <p class="font-bold text-slate-800">Vandrevala Foundation</p>
+          <p class="text-[#059BE0] font-bold text-sm">📞 +91 9999 666 555</p>
+        </div>
+      </div>
+
+      <button onclick="closeCrisisModal()" class="w-full mt-5 py-2.5 rounded-full bg-[#012F5F] text-white text-xs font-bold hover:bg-[#02549B] transition">
+        Close Window
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Observation Detail Modal -->
+  <div id="insightDetailModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-slate-900 shadow-2xl border border-[#D6E7F2]">
+      <div class="flex justify-between items-start mb-3">
+        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-[#E6F6FF] text-[#02549B]">Longitudinal Analysis</span>
+        <button onclick="closeInsightDetail()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <h3 class="text-base font-bold text-[#012F5F] mb-1">Sleep & Workload Co-occurrence</h3>
+      <p class="text-[11px] text-[#496784] mb-3">Timeframe: Oct 24 - Oct 30, 2026</p>
+
+      <div class="space-y-2.5 text-xs">
+        <div class="p-3 rounded-xl bg-[#F4F7F7] border border-[#D6E7F2]">
+          <p class="font-bold text-[#012F5F] text-[11px]">Primary Associated Factor</p>
+          <p class="text-[#059BE0] font-semibold text-xs mt-0.5">Rest Consistency (+0.08h sleep)</p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-white border border-[#D6E7F2]">
+          <p class="font-bold text-[#012F5F] text-[11px]">Observed Data</p>
+          <p class="text-slate-600 text-[11px] leading-relaxed mt-0.5">
+            Your reported sleep duration of 7.8 hours coincided with an 18% reduction in subjective stress relative to your 14-day baseline.
+          </p>
+        </div>
+
+        <div class="p-3 rounded-xl bg-[#FFFBEB] border border-[#FDE68A]">
+          <p class="font-bold text-[#92400E] text-[11px]">What We Cannot Conclude</p>
+          <p class="text-[#78350F] text-[10px] leading-relaxed mt-0.5">
+            This statistical co-occurrence reflects observed lifestyle patterns, not medical advice or guaranteed causality.
+          </p>
+        </div>
+      </div>
+
+      <button onclick="closeInsightDetail()" class="w-full mt-4 py-2.5 rounded-full bg-[#012F5F] text-white text-xs font-bold hover:bg-[#02549B] transition">
+        Return
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    const screens = ['splash', 'onboarding', 'home', 'checkin', 'journal', 'sleep', 'workload', 'voice', 'activity', 'insights', 'settings', 'showcase'];
+
+    function navigateTo(target) {
+      screens.forEach(s => {
+        const el = document.getElementById('screen-' + s);
+        if (el) el.classList.add('hidden');
+      });
+      const targetEl = document.getElementById('screen-' + target);
+      if (targetEl) targetEl.classList.remove('hidden');
+
+      // Update Nav Highlights
+      const navIds = ['home', 'insights', 'tools', 'profile'];
+      navIds.forEach(n => {
+        const btn = document.getElementById('nav-' + n);
+        if (btn) {
+          btn.className = (n === target || (n === 'tools' && target === 'showcase') || (n === 'profile' && target === 'settings'))
+            ? "flex flex-col items-center gap-0.5 text-[#059BE0] font-bold"
+            : "flex flex-col items-center gap-0.5 text-[#496784] hover:text-[#059BE0] transition font-medium";
+        }
+      });
+
+      // Scroll to top of screen container
+      document.getElementById('screenContainer').scrollTop = 0;
+    }
+
+    // Crisis Regex Interceptor
+    const crisisRegex = /(?:suicide|kill myself|end my life|want to die|hang myself|slit my wrist|take all my pills|no reason to live)/i;
+
+    function checkJournalText(val) {
+      const banner = document.getElementById('crisisAlertBanner');
+      if (crisisRegex.test(val)) {
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+      updateWordCount();
+    }
+
+    function updateWordCount() {
+      const val = document.getElementById('journalText').value;
+      const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+      document.getElementById('journalCount').innerText = `${words} words • ${val.length} chars`;
+    }
+
+    function saveJournal() {
+      const val = document.getElementById('journalText').value;
+      if (!val.trim()) return;
+      alert('Reflection encrypted and saved to local SQLite database.');
+      navigateTo('home');
+    }
+
+    function selectMood(val) {
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById('mood-' + i);
+        if (i === val) {
+          btn.className = "mood-btn p-2 rounded-xl bg-[#012F5F] text-white border border-[#012F5F] flex flex-col items-center transition shadow-xs";
+          btn.querySelector('span:last-child').className = "text-[10px] font-bold text-white mt-1";
+        } else {
+          btn.className = "mood-btn p-2 rounded-xl bg-white border border-[#D6E7F2] flex flex-col items-center hover:bg-[#F4F7F7] transition";
+          btn.querySelector('span:last-child').className = "text-[10px] font-medium text-[#496784] mt-1";
+        }
+      }
+    }
+
+    function updateStress(val) {
+      document.getElementById('stressDisplay').innerText = `Score: ${val} / 5`;
+    }
+
+    function updateEnergy(val) {
+      document.getElementById('energyDisplay').innerText = `Rating: ${val} / 5`;
+    }
+
+    function saveCheckIn() {
+      alert('Daily check-in recorded to personal baseline.');
+      navigateTo('home');
+    }
+
+    function updateSleep(val) {
+      document.getElementById('sleepDisplay').innerText = `${val} Hours Logged`;
+      document.getElementById('sleepHoursVal').innerText = `${val} hrs`;
+    }
+
+    function setQuality(val) {
+      const stars = document.querySelectorAll('.quality-star');
+      stars.forEach((s, idx) => {
+        s.className = (idx < val) ? 'quality-star text-amber-400' : 'quality-star text-slate-300';
+      });
+    }
+
+    let deadlines = 1;
+    function changeDeadline(delta) {
+      deadlines = Math.max(0, deadlines + delta);
+      document.getElementById('deadlinesVal').innerText = deadlines;
+      updateWorkload();
+    }
+
+    function updateWorkload() {
+      const m = parseInt(document.getElementById('mentalSlider').value);
+      const e = parseInt(document.getElementById('effortSlider').value);
+      document.getElementById('mentalDisplay').innerText = `Rating: ${m} / 5`;
+      document.getElementById('effortDisplay').innerText = `Rating: ${e} / 5`;
+      const idx = (0.5 * m + 0.5 * e + 0.2 * Math.min(deadlines, 5)).toFixed(1);
+      document.getElementById('workloadIndexDisplay').innerText = `Index: ${idx} / 6.0`;
+    }
+
+    let isRecording = false;
+    function toggleVoiceRecording() {
+      isRecording = !isRecording;
+      const btn = document.getElementById('voiceMicBtn');
+      const wave = document.getElementById('voiceWaveform');
+      const status = document.getElementById('voiceStatus');
+      if (isRecording) {
+        btn.className = "w-20 h-20 rounded-full bg-red-600 text-white text-3xl shadow-lg shadow-red-500/40 animate-pulse mx-auto flex items-center justify-center";
+        wave.classList.remove('hidden');
+        status.innerText = "Recording sample (00:04)...";
+      } else {
+        btn.className = "w-20 h-20 rounded-full bg-gradient-to-r from-[#059BE0] to-[#02549B] text-white text-3xl shadow-lg shadow-[#059BE0]/30 hover:scale-105 transition mx-auto flex items-center justify-center";
+        wave.classList.add('hidden');
+        status.innerText = "Sample ready for on-device feature extraction";
+      }
+    }
+
+    function updateActivity() {
+      const steps = document.getElementById('stepSlider').value;
+      const mins = document.getElementById('activeMinSlider').value;
+      document.getElementById('stepsVal').innerText = `${steps} steps`;
+      document.getElementById('activeMinVal').innerText = `${mins} mins`;
+      document.getElementById('activityDisplay').innerText = `${steps} Steps • ${mins} Mins Active`;
+    }
+
+    function saveGeneric(msg) {
+      alert(msg);
+      navigateTo('home');
+    }
+
+    function openCrisisModal() {
+      document.getElementById('crisisModal').classList.remove('hidden');
+    }
+
+    function closeCrisisModal() {
+      document.getElementById('crisisModal').classList.add('hidden');
+    }
+
+    function openInsightDetail() {
+      document.getElementById('insightDetailModal').classList.remove('hidden');
+    }
+
+    function closeInsightDetail() {
+      document.getElementById('insightDetailModal').classList.add('hidden');
+    }
+
+    function exportDataJson() {
+      alert('Exported structured user data JSON under DPDP Act 2023 Section 12.');
+    }
+
+    function purgeData() {
+      if (confirm('Under the DPDP Act 2023, this will permanently wipe all your records. Proceed?')) {
+        alert('All personal records have been permanently erased from the local database.');
+      }
+    }
+  </script>
+</body>
+</html>

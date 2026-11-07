@@ -1,0 +1,146 @@
+# MindPulse (SENSE) — Architecture & Research Decision Records (ADR)
+## Formal Decision Log
+
+This document records the foundational research, architectural, and governance decisions made for the MindPulse project. Every decision documents the context, alternatives considered, justification, and implications.
+
+---
+
+## Index of Decisions
+
+- [ADR-001: Selection of Flutter as the Cross-Platform Mobile Framework](#adr-001-selection-of-flutter-as-the-cross-platform-mobile-framework)
+- [ADR-002: Modular Tiered Architecture for Multimodal Machine Learning](#adr-002-modular-tiered-architecture-for-multimodal-machine-learning)
+- [ADR-003: On-Device Feature Extraction for Highly Sensitive Voice & Text](#adr-003-on-device-feature-extraction-for-highly-sensitive-voice--text)
+- [ADR-004: Decoupled Independent Crisis Safety Pathway](#adr-004-decoupled-independent-crisis-safety-pathway)
+- [ADR-005: Within-Person Statistical Baselines vs. Population Norms as Primary Engine](#adr-005-within-person-statistical-baselines-vs-population-norms-as-primary-engine)
+- [ADR-006: Decision-Level Late Fusion for Asynchronous Modality Data](#adr-006-decision-level-late-fusion-for-asynchronous-modality-data)
+- [ADR-007: Phased Modular MVP Scoping (Prioritizing M1, M3, M4, M2 before M5, M6)](#adr-007-phased-modular-mvp-scoping-prioritizing-m1-m3-m4-m2-before-m5-m6)
+- [ADR-008: Adoption of Rust for Core Backend & Cross-Platform Processing Engine](#adr-008-adoption-of-rust-for-core-backend--cross-platform-processing-engine)
+
+---
+
+### ADR-001: Selection of Flutter as the Cross-Platform Mobile Framework
+- **Status:** Proposed (Recommended for Phase 0 Approval)
+- **Date:** 2026-11-06
+- **Context:** MindPulse requires a cross-platform mobile client for Android and iOS that supports smooth UI rendering, precise audio recording, health platform integration (Android Health Connect / iOS HealthKit), encrypted local storage (SQLCipher), and lightweight on-device ML model execution.
+- **Alternatives Considered:**
+  1. *React Native:* Strong ecosystem, but native bridging overhead for audio buffer processing and frequent breaking changes between New Architecture (Fabric/TurboModules) and community health libraries introduce stability risks.
+  2. *Kotlin Multiplatform (KMP) + Compose Multiplatform:* Excellent native performance on Android, but iOS UI maturity and iOS audio processing ecosystems are comparatively nascent and require substantial separate Swift engineering.
+  3. *Native Android (Kotlin) & iOS (Swift):* Maximizes platform performance, but doubles maintenance overhead and risks divergent feature behavior across platforms during rapid research iterations.
+  4. *Flutter (Dart):* High graphics consistency (Impeller rendering engine), unified audio recording libraries (`record`, `audio_waveforms`), production Health integrations (`health` package supporting Android Health Connect & Apple HealthKit), first-class SQLite encryption (`sqflite_sqlcipher`), and mature ONNX/TFLite bindings.
+- **Decision:** Select **Flutter (Dart)** as the primary cross-platform mobile framework.
+- **Consequences:**
+  - Single unified codebase for UI, local business logic, and data storage.
+  - Efficient access to OS audio recording and health APIs via validated community plugins.
+  - Requires compiling native C/C++ libraries if custom feature extraction binaries (e.g., custom openSMILE bindings) are integrated on-device.
+
+---
+
+### ADR-002: Modular Tiered Architecture for Multimodal Machine Learning
+- **Status:** Approved
+- **Date:** 2026-11-06
+- **Context:** Stress manifests across disparate biological, behavioral, and psychological timescales. Bundling raw sensor and survey data directly into an end-to-end monolithic neural network prevents interpretability, fails catastrophically under missing modalities, and impedes scientific isolation of modality contributions.
+- **Alternatives Considered:**
+  1. *End-to-end Deep Neural Network:* High capacity, but opaque, prone to severe overfitting on small longitudinal cohorts, completely fragile to missing modality inputs, and lacks explainability.
+  2. *Single-Modality Analysis only:* High interpretability, but discards cross-modal patterns (e.g., the compounding effect of poor sleep combined with high workload).
+- **Decision:** Implement a **Modular 4-Stage Tiered Pipeline**:
+  1. *Stage 1 (Modality Preprocessing & Feature Extraction):* Independent modules transform raw inputs into standardized daily feature vectors.
+  2. *Stage 2 (Personalized Baseline & Deviation Modeling):* Within-person deviation scoring against personal rolling distributions ($z$-score, EWMA, CUSUM).
+  3. *Stage 3 (Temporal & Cross-Modal Fusion):* Asynchronous temporal aggregation and decision-level fusion with missing-modality handling.
+  4. *Stage 4 (Explainable Insight Generation):* Feature attribution maps and rule-based template narrative synthesis.
+- **Consequences:**
+  - Enables modular evaluation where any modality can be plugged in or omitted.
+  - Allows strict benchmarking of whether adding a modality yields measurable scientific value.
+  - Supports explainability at each distinct phase.
+
+---
+
+### ADR-003: On-Device Feature Extraction for Highly Sensitive Voice & Text
+- **Status:** Approved
+- **Date:** 2026-11-06
+- **Context:** Free-text journal entries (M2) and voice recordings (M5) represent highly sensitive, private personal information. Sending raw audio or plain-text journal reflections to external third-party cloud LLM APIs violates the privacy guarantees of the MindPulse research charter and the DPDP Act 2023.
+- **Alternatives Considered:**
+  1. *Centralized Cloud Processing with Commercial APIs (OpenAI/Anthropic):* High linguistic accuracy, but severe privacy violation; exposes raw user journals and voice samples to third-party data processors.
+  2. *Self-Hosted Cloud Inference Container:* Better data governance, but transmits raw voice recordings over the network, introducing transmission eavesdropping and central server breach risks.
+  3. *On-Device Feature Extraction & Transformation:* Audio is converted on-device to non-reconstructible acoustic prosodic features (pitch variance, jitter, shimmer, pause ratio) via openSMILE/ONNX; raw audio is immediately deleted after extraction. Text is processed via on-device embedding/lexicon or zero-knowledge local representation.
+- **Decision:** Adopt **On-Device Feature Extraction** for audio and sensitive text. Raw audio recordings shall never leave the device. Only mathematically transformed, irreversible acoustic parameters and lexical sentiment aggregates are retained.
+- **Consequences:**
+  - Eliminates the risk of ambient audio leaks or journal intercept.
+  - Guarantees compliance with Indian DPDP Act 2023 data minimization mandates.
+  - Constrains the computational complexity of models to what can execute smoothly on mid-tier mobile hardware.
+
+---
+
+### ADR-004: Decoupled Independent Crisis Safety Pathway
+- **Status:** Approved
+- **Date:** 2026-11-06
+- **Context:** MindPulse is an experimental digital well-being research platform, not a clinical crisis intervention system. Machine learning models for stress are probabilistic and can produce false negatives. If a user is experiencing acute psychological distress or self-harm ideation, relying on an experimental ML model to trigger support is unsafe and ethically unacceptable.
+- **Alternatives Considered:**
+  1. *ML-Triggered Emergency Escalation:* Using NLP keyword detectors or anomaly scores to trigger crisis hotlines. Rejected because false negatives leave vulnerable individuals without aid, while false positives induce panic and user distrust.
+  2. *No Crisis Resources in App:* Unethical; fails duty of care when researching stress and psychological well-being.
+  3. *Decoupled, Static, Prominently Accessible Crisis Safety Pathway:* A permanently visible, one-tap safety panel that provides verified national crisis hotlines (e.g., Tele-MANAS, KIRAN 1800-599-0019 in India; 988 in the US) and emergency contacts completely independent of ML model state, supplemented by gentle rule-based keyword safeguards in journal input.
+- **Decision:** Implement a **Decoupled Independent Crisis Safety Pathway** accessible at all times with one tap from every app screen.
+- **Consequences:**
+  - Preserves user safety without conflating experimental well-being research with emergency medical triage.
+  - Explicitly states non-clinical disclaimers to ensure users never rely on MindPulse for medical or crisis emergencies.
+
+---
+
+### ADR-005: Within-Person Statistical Baselines vs. Population Norms as Primary Engine
+- **Status:** Approved
+- **Date:** 2026-11-06
+- **Context:** Physiological and subjective stress markers vary drastically across individuals. A resting heart rate or sleep duration that indicates high stress in one individual may represent optimal baseline function in another. Similarly, rating scale usage varies widely (e.g., individual response styles, cultural differences in reporting distress).
+- **Alternatives Considered:**
+  1. *Global Population-Threshold Classification:* Train a single global model using fixed cutoffs (e.g., PSS $> 26$ = high stress). Suffers from massive inter-individual variability and high false-positive rates for chronically anxious users and false-negatives for stoic users.
+  2. *Within-Person Adaptive Baseline Engine:* Compute each user's running historical baseline ($N \ge 14$ days) using Exponentially Weighted Moving Average (EWMA) and dynamic standard deviation bands. Individual stress scores are computed as normalized deviations ($z$-scores) from personal history.
+- **Decision:** Establish **Within-Person Personalized Baselines** as the central algorithmic foundation.
+- **Consequences:**
+  - Requires a "calibration period" (typically 7–14 days) before high-confidence personalized early warnings can be generated.
+  - Successfully handles diverse lifestyle rhythms and personal reporting norms.
+
+---
+
+### ADR-006: Decision-Level Late Fusion for Asynchronous Modality Data
+- **Status:** Approved
+- **Date:** 2026-11-06
+- **Context:** In mobile digital health, participant compliance is asynchronous and sporadic. Users may complete a check-in (M1) and track sleep (M3), but skip journaling (M2) or decline voice recording (M5). Early fusion (concatenating all raw feature vectors into a single vector) fails when features are missing and requires complex imputation that can distort signals.
+- **Alternatives Considered:**
+  1. *Early Feature Concatenation:* Fails or degrades rapidly when $>30\%$ of modalities are unrecorded on a given day. Imputation introduces synthetic artifacts.
+  2. *Intermediate Joint Embedding (e.g., Multimodal Autoencoder):* Computationally expensive, requires synchronized training data, and provides poor interpretability.
+  3. *Decision-Level Late Fusion with Dynamic Reliability Weighting:* Each modality extracts an independent deviation score and an associated confidence metric. The final well-being shift estimation is a weighted consensus of available modalities.
+- **Decision:** Implement **Decision-Level Late Fusion** as the primary multimodal integration mechanism.
+- **Consequences:**
+  - Gracefully handles missing modalities: if modality $m$ is missing, its weight is set to 0 and the denominator is renormalized without penalizing the user.
+  - Preserves full auditability of each modality's specific contribution to the final composite score.
+
+---
+
+### ADR-007: Phased Modular MVP Scoping (Prioritizing M1, M3, M4, M2 before M5, M6)
+- **Status:** Approved
+- **Date:** 2026-11-06
+- **Context:** Attempting to build all six modalities simultaneously creates excessive technical friction, delays user testing, and entangles audio/sensor permission hurdles with baseline engine validation.
+- **Alternatives Considered:**
+  1. *All-at-Once Implementation (M1–M6 simultaneously):* High risk of delayed delivery, high friction onboarding, and compounded debugging challenges.
+  2. *Phased MVP Scoping:*
+     - **Phase 2 (MVP):** Low-friction, high-compliance modalities: M1 (Structured Check-ins), M3 (Sleep logging), M4 (Workload rating), and M2 (Text Journal).
+     - **Phase 3 (Advanced AI):** Higher-friction modalities: M5 (Voice prosody) and M6 (Passive Health Connect physical activity).
+- **Decision:** Adopt **Phased Modular MVP Scoping**. The MVP delivers complete end-to-end functionality using M1, M3, M4, and M2.
+- **Consequences:**
+  - Accelerates baseline engine verification and UI usability validation.
+  - Avoids early battery drain, microphone permission resistance, and background sync pitfalls until the core loop is robust.
+
+---
+
+### ADR-008: Adoption of Rust for Core Backend & Cross-Platform Processing Engine
+- **Status:** Approved (Authorized by Project Stakeholder on 2026-11-06)
+- **Date:** 2026-11-06
+- **Context:** MindPulse requires mathematical parity between on-device mobile execution and central research processing. Re-implementing statistical baselines, CUSUM change detection, and dynamic late fusion across disparate languages (Python for server, Dart for mobile) creates maintenance friction and risk of subtle floating-point drift. Furthermore, processing sensitive health data under the DPDP Act 2023 benefits from strict memory safety and minimal resource footprint.
+- **Alternatives Considered:**
+  1. *Python-only Backend:* Excellent exploratory ecosystem, but heavy memory footprint ($\sim 200$MB+), difficult to embed natively on mobile devices, and slower execution speeds.
+  2. *Node.js / TypeScript:* Event-driven, but lacks native high-performance mathematical computing and cannot be compiled to native C-ABI static libraries for mobile embedding without heavy V8/Hermes overhead.
+  3. *Rust Core Engine:* Compiles to standalone high-performance server binaries (Axum/Tokio) AND compiles to C-ABI static libraries (`.so`/`.a`) for direct on-device mobile integration via FFI. Offers zero-cost abstractions, sub-millisecond execution, memory safety, and minimal memory usage ($\sim 15$MB).
+- **Decision:** Build the **Core Backend and Shared Mathematical Engine in Rust**. Python is retained exclusively for exploratory research notebooks and training pipelines; production ingestion, baselines, fusion, and SQLite management are unified in Rust.
+- **Consequences:**
+  - Guarantees 100% bit-for-bit mathematical parity between mobile edge inference and research servers.
+  - Sub-millisecond baseline updates and zero garbage collection pauses.
+  - Strong compile-time guarantees preventing null pointer dereferences and data races on sensitive participant data.
+

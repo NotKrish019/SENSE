@@ -1,0 +1,587 @@
+# SENSE — Mobile UI Design System
+
+**Document type:** Visual design specification  
+**Version:** 1.0  
+**Status:** Proposed implementation reference  
+**Product:** SENSE — AI-powered personal well-being and stress-pattern monitoring  
+**Primary platforms:** Android and iOS  
+**Visual direction:** White surfaces, deep ocean blue, cyan accents and restrained neumorphism
+
+---
+
+## 1. Design intent
+
+SENSE should feel calm, clear, trustworthy and contemporary. The interface should help people reflect on their well-being without making the experience feel clinical, alarming, childish or overly decorative.
+
+The visual identity combines:
+
+- A predominantly white and very light blue canvas.
+- Deep navy for high-priority text and brand structure.
+- Ocean blue for primary actions and selected states.
+- Cyan for highlights, chart details and small points of emphasis.
+- Restrained neumorphic surfaces for depth, not as a visual effect on every element.
+- Simple line icons, generous spacing and clear information hierarchy.
+
+The supplied SENSE UI Toolkit presentation is the primary visual reference for the intended appearance. This document translates that reference into reusable design rules. The presentation is a reference board, not a screen to use as a background or a pixel-perfect asset.
+
+### Design principles
+
+1. **Calm before decoration:** avoid visual noise, excessive gradients, glowing effects and unnecessary animation.
+2. **Clarity before softness:** neumorphic shadows must never reduce readability, affordance or control visibility.
+3. **Evidence before interpretation:** distinguish user-reported information from system-generated observations.
+4. **Consistent components:** use shared tokens and reusable components instead of screen-specific styling.
+5. **Accessible by default:** support readable contrast, large touch targets, scalable text and clear focus/selection states.
+6. **Privacy is visible:** consent, permissions, data access and deletion must be understandable and easy to find.
+
+---
+
+## 2. Brand and visual identity
+
+### Product name
+
+**SENSE**
+
+Use the uppercase wordmark `SENSE` in primary branding. A final logo mark has not been approved. Until one is supplied, use a restrained placeholder mark (for example, a simple abstract pulse/signal motif) alongside the wordmark. Do not reuse JalDrishti's water-drop logo, wave emblem or visual identity.
+
+### Tone
+
+- Reassuring, not sentimental.
+- Informative, not diagnostic.
+- Calm, not muted to the point of low contrast.
+- Precise, not alarmist.
+
+Prefer copy such as:
+
+- “Your reported stress has been higher than your recent baseline.”
+- “Your sleep duration and reported stress changed during the same period.”
+- “This is an observed pattern, not a diagnosis.”
+
+Avoid definitive clinical claims such as “You have anxiety,” “Depression detected,” or “Your stress is 82%.”
+
+---
+
+## 3. Colour system
+
+The palette is adapted from the supplied SENSE visual reference. Use the values below as the initial source of truth; do not introduce unrelated accent colours without documenting the reason.
+
+| Token | Hex | Intended use |
+|---|---|---|
+| `color-navy-900` | `#012F5F` | Brand foundation, headings on light surfaces, dark panels |
+| `color-blue-800` | `#02549B` | Secondary brand blue, gradient endpoint, active navigation |
+| `color-blue-600` | `#059BE0` | Primary action, links, active controls and chart series |
+| `color-cyan-500` | `#07CCFC` | Small highlights, focus accents, chart highlights |
+| `color-cyan-300` | `#58E2F9` | Soft decorative accents and secondary data details |
+| `color-background` | `#E6F6FF` | App background / cool blue page canvas |
+| `color-surface` | `#F4F7F7` | Main card and control surfaces |
+| `color-white` | `#FFFFFF` | Raised surfaces, inputs and high-clarity areas |
+
+### Supporting semantic colours
+
+Use semantic colours sparingly and consistently. They are functional indicators, not additional brand colours.
+
+| Token | Suggested value | Intended use |
+|---|---|---|
+| `color-text-primary` | `#082B52` | Primary text on light backgrounds |
+| `color-text-secondary` | `#496784` | Supporting text and labels |
+| `color-text-muted` | `#607B93` | Captions, timestamps and low-priority metadata |
+| `color-border` | `#D6E7F2` | Subtle separators and outlines |
+| `color-success` | `#087F6E` | Positive/complete state |
+| `color-warning` | `#9A5B00` | Caution or elevated indicator |
+| `color-danger` | `#B42332` | Error or urgent state only |
+
+### Usage rules
+
+- Keep most screens light. Navy is an anchor colour, not the default full-screen background.
+- Use navy for headings and important text; do not use bright cyan for paragraphs.
+- Use white text on primary buttons only after verifying sufficient contrast against the button fill.
+- Do not communicate a state through colour alone. Pair colour with text, an icon or another clear label.
+- Do not make “high stress” red by default. Use neutral language and reserve danger styling for actual safety or system error states.
+- Validate colour contrast for text, icons, borders and focus states. If a pairing fails WCAG 2.2 AA contrast, adjust the pairing rather than weakening the requirement.
+
+### Gradients
+
+Use gradients selectively, mainly for primary actions or a single key summary panel.
+
+- Primary action: `#059BE0` to `#02549B`.
+- Optional highlight: `#07CCFC` to `#059BE0`.
+- Avoid placing long text over gradients.
+- Avoid using a gradient on every card, button and navigation item.
+
+---
+
+## 4. Typography
+
+### Typeface
+
+Preferred family: **Poppins**. Use the platform's system sans-serif as a fallback if Poppins cannot be bundled or loaded reliably.
+
+Use a consistent family throughout the app. Do not mix multiple decorative typefaces.
+
+| Style | Size | Weight | Typical use |
+|---|---:|---|---|
+| Display | 30–34 sp | Bold / SemiBold | Welcome or major screen headline; use sparingly |
+| H1 | 28 sp | Bold | Primary screen title |
+| H2 | 22–24 sp | SemiBold | Section title |
+| H3 | 18–20 sp | SemiBold | Card title and subsection |
+| Body large | 16 sp | Regular | Main explanatory text |
+| Body | 14–16 sp | Regular | Standard content and controls |
+| Label | 13–14 sp | Medium | Input labels, tabs and metadata |
+| Caption | 12 sp minimum | Regular / Medium | Timestamps and supplementary text |
+
+### Typography rules
+
+- Use sentence case for screen titles and labels.
+- Avoid long all-caps labels.
+- Maintain comfortable line height (approximately 1.35–1.5 for body copy).
+- Do not truncate important health or consent explanations without a way to read the full text.
+- Respect OS text scaling and dynamic type where supported.
+
+---
+
+## 5. Spacing, sizing and layout
+
+Use a **4 dp spacing base unit**. Prefer the following spacing scale:
+
+`4, 8, 12, 16, 20, 24, 32, 40, 48` dp.
+
+### Layout guidance
+
+- Standard horizontal screen inset: 20–24 dp, adapted to device width.
+- Card internal padding: 16–20 dp.
+- Space between major sections: 24–32 dp.
+- Space between related controls: 8–12 dp.
+- Keep content within safe areas and account for system status/navigation bars.
+- Use scrollable content for dense dashboards; do not squeeze everything above the fold.
+- Avoid fixed heights for text-heavy cards.
+
+### Corner radius scale
+
+| Token | Radius | Use |
+|---|---:|---|
+| `radius-sm` | 8 dp | Small chips and compact controls |
+| `radius-md` | 12 dp | Inputs and small cards |
+| `radius-lg` | 16 dp | Standard cards and buttons |
+| `radius-xl` | 20–24 dp | Hero cards and bottom sheets |
+| `radius-pill` | 999 dp | Pills, tags and segmented controls |
+
+### Touch targets
+
+- Aim for at least 44 × 44 dp; use 48 × 48 dp where practical.
+- Ensure icon-only actions have a sufficiently large hit area.
+- Keep enough separation between adjacent actions to prevent accidental taps.
+
+---
+
+## 6. Neumorphic surfaces, elevation and shadows
+
+Neumorphism is a supporting treatment, not the core information hierarchy.
+
+### Surface rules
+
+- Use white or very light blue surfaces.
+- Use subtle paired shadows to suggest lift on low-risk, non-critical cards.
+- Prefer a clean border or light elevation when neumorphic shadows reduce contrast.
+- Use inset/pressed effects only for controls where the state is obvious through additional cues.
+- Avoid deep shadows, thick bevels, glass effects and strong glow effects.
+
+### Suggested shadow tokens
+
+These are starting points and must be adapted to the platform implementation.
+
+- `shadow-card`: soft ambient shadow, approximately `0 6px 18px rgba(1, 47, 95, 0.08)` plus a very subtle upper highlight.
+- `shadow-raised`: slightly stronger shadow for a floating action or primary tile, approximately `0 8px 20px rgba(1, 47, 95, 0.12)`.
+- `shadow-pressed`: minimal inset treatment; always pair with an explicit selected/pressed state.
+- `shadow-none`: flat surfaces for dense lists and accessibility-critical elements.
+
+Do not assume CSS shadow syntax maps directly to native iOS and Android. Use platform-appropriate elevation/shadow APIs while preserving the same visual intent.
+
+---
+
+## 7. Buttons and actions
+
+### Button hierarchy
+
+**Primary button**
+- Gradient fill from ocean blue to secondary blue.
+- White label.
+- Semi-bold text.
+- Height: approximately 48–52 dp.
+- Radius: 16 dp or pill where appropriate.
+- Use for the single main action on a screen.
+
+**Secondary button**
+- White or pale-blue fill.
+- Navy label.
+- Subtle border or restrained shadow.
+- Use for secondary actions such as Save or Skip.
+
+**Outline button**
+- Transparent/light surface.
+- Blue border and navy/blue label.
+- Use for less prominent actions.
+
+**Text button**
+- No surface treatment.
+- Blue label with clear pressed feedback.
+- Use for low-priority actions such as View all.
+
+### Button states
+
+Every button must define:
+
+- Default.
+- Pressed.
+- Disabled.
+- Loading, where an asynchronous action is possible.
+- Focus/keyboard state where relevant.
+
+Do not rely on a colour change alone to communicate these states.
+
+---
+
+## 8. Inputs and controls
+
+Use consistent labels, helper text and error messages.
+
+### Text fields
+
+- White or very light surface.
+- Minimum height approximately 52 dp for single-line inputs.
+- Rounded corners (12–16 dp).
+- Label outside or clearly above the input; do not rely only on placeholder text.
+- Show focused, error, disabled and populated states.
+- Maintain readable text and placeholder contrast.
+
+### Check-ins and rating controls
+
+- Use clear labelled choices for mood, perceived stress and energy.
+- Ensure every icon/emoticon has a text label.
+- Use a selected state with blue emphasis, outline and/or check mark.
+- Do not make a mood rating appear to be a diagnosis.
+- Preserve the user's selected value when navigating between steps.
+
+### Other controls
+
+- Toggle: show a visible label and on/off state.
+- Checkbox and radio: use clear selected indicators.
+- Slider: show current value and meaningful endpoints; do not use without a defined scale.
+- Dropdown/select: provide a visible label and selected value.
+- Date/time picker: follow platform conventions where possible.
+
+---
+
+## 9. Cards and reusable surfaces
+
+### Standard card
+
+- Surface: `#FFFFFF` or `#F4F7F7`.
+- Radius: 16–20 dp.
+- Padding: 16–20 dp.
+- Border: optional subtle `#D6E7F2`.
+- Shadow: soft and restrained.
+
+### Stress summary card
+
+- Can use a deep blue panel or a light surface with navy heading and blue indicator.
+- State exactly what the metric represents: for example, “Self-reported stress” or “Stress-related pattern”.
+- Include a period and context for trend statements.
+- Do not show fabricated live scores or unsupported probability claims.
+
+### Insight card
+
+- Include a concise heading, an evidence-linked observation and a time period.
+- Distinguish observed data from generated interpretation.
+- Provide a route to more detail when the observation needs explanation.
+- Avoid claiming causality from correlation.
+
+### Quick-action tiles
+
+- Use a simple icon, short label and consistent tile size.
+- Keep the interaction area large.
+- Do not show all six modalities as enabled when the user has not granted the relevant permission or completed setup.
+
+---
+
+## 10. Iconography and illustration
+
+- Use one consistent outline icon family (Lucide or an equivalent licensed icon set).
+- Prefer 1.75–2 px visual stroke at typical mobile sizes.
+- Standard icon sizes: 20, 24 and 28 dp.
+- Use navy for inactive icons and blue/cyan for active icons.
+- Do not mix filled, outline, 3D and hand-drawn icon styles within the same interface.
+- Avoid decorative water imagery or copying the JalDrishti logo. SENSE should have its own identity.
+- Provide accessible labels for icon-only controls.
+
+Core icon concepts:
+
+- Home.
+- Insights / analytics.
+- Add / check-in.
+- Journal.
+- Sleep.
+- Workload.
+- Voice recording.
+- Activity.
+- Profile.
+- Privacy / consent.
+- Notifications.
+- Help and support.
+
+---
+
+## 11. Navigation
+
+### Primary bottom navigation
+
+Use a consistent bottom navigation bar for the main app areas:
+
+1. Home.
+2. Insights.
+3. Central Add / Check-in action.
+4. Tools.
+5. Profile.
+
+The central action may be visually emphasized, but it must not obscure other navigation items or system gestures.
+
+### Top app bar
+
+- Use a clear screen title.
+- Back navigation on secondary screens.
+- Optional contextual actions on the right.
+- Respect device safe areas.
+
+Keep navigation labels visible where practical. Active navigation must be distinguishable by icon and text, not colour alone.
+
+---
+
+## 12. Charts and data visualization
+
+Charts must be simple, legible and honest about the underlying data.
+
+### Chart styling
+
+- Primary series: `#059BE0`.
+- Highlight points: `#07CCFC`.
+- Gridlines: very light blue/grey.
+- Labels: navy or secondary text.
+- Use soft fills sparingly.
+- Avoid 3D charts, decorative gauges and excessive gradients.
+
+### Chart behaviour
+
+- Include units, date range and a meaningful title.
+- Provide a textual summary or accessible data alternative.
+- Label missing periods rather than silently interpolating them.
+- Do not imply precision beyond the underlying measurements.
+- For small datasets, prefer clear daily/weekly values over complex visualizations.
+- Mark synthetic/sample data as sample data in development builds and demos.
+
+### Recommended visualizations
+
+- Stress self-report trend over time.
+- Sleep duration trend.
+- Workload trend.
+- Activity summary.
+- Optional comparison of two observed variables, explicitly labelled as association rather than causation.
+
+---
+
+## 13. SENSE screen inventory and visual patterns
+
+The supplied visual reference suggests the following initial screen family. This is a design inventory, not authorization to invent backend functionality.
+
+### A. Splash / launch
+
+- SENSE wordmark and temporary abstract mark.
+- Deep navy-to-blue brand field or a restrained light launch screen.
+- Minimal motion, with reduced-motion support.
+
+### B. Onboarding
+
+- Short explanation of the app's non-clinical purpose.
+- Clear explanation of what data may be collected and why.
+- Separate, optional consent choices for modalities.
+- No dark patterns or forced activation of voice/activity permissions.
+
+### C. Home dashboard
+
+- Personalized greeting only when a real profile name exists; otherwise use neutral greeting.
+- Primary well-being summary.
+- Clearly labelled self-report/pattern status.
+- Quick actions for check-in, journal, sleep, workload, voice and activity.
+- Empty and incomplete-data states.
+
+### D. Daily check-in
+
+- Mood and perceived-stress questions with labelled scales.
+- Progress indication for multi-step entry.
+- Optional journal prompt.
+- Save/continue action.
+- Clear confirmation after saving.
+
+### E. Journal
+
+- Private writing surface.
+- Character count only if needed.
+- Save/discard behaviour with confirmation for unsaved content.
+- Explain whether journal content will be analyzed and how it is handled.
+
+### F. Sleep
+
+- Manual entry first unless an approved device integration exists.
+- Duration, timing and quality fields.
+- History and trend view.
+
+### G. Workload
+
+- Simple task-load and perceived-intensity inputs.
+- Avoid unnecessary calendar or institutional access.
+
+### H. Voice
+
+- Explicit tap-to-record flow.
+- Clear microphone permission rationale.
+- Visible recording state and cancel/delete option.
+- No background recording.
+- Communicate processing and retention behaviour before recording.
+
+### I. Activity
+
+- Manual entry or a specifically authorized integration.
+- Clear permission status and missing-data state.
+- No GPS or unrelated device data collection by default.
+
+### J. Insights
+
+- Daily / weekly / monthly views where enough data exists.
+- Trend cards with date ranges and provenance labels.
+- Evidence-linked explanations.
+- Clear uncertainty and missing-data messaging.
+
+### K. Insight detail
+
+- What changed.
+- Which observations support the statement.
+- Time range and comparison baseline.
+- What the system cannot conclude.
+- Optional supportive next steps.
+
+### L. Profile, privacy and settings
+
+- User profile.
+- Data and privacy controls.
+- Consent and permissions by modality.
+- Export and deletion paths.
+- Help and support resources.
+
+---
+
+## 14. Data provenance and mental well-being language
+
+Every displayed metric or insight must make its source understandable.
+
+Use clear categories such as:
+
+- **You reported:** directly entered by the user.
+- **Recorded:** imported from an explicitly connected source.
+- **Observed pattern:** derived from the user's historical data.
+- **AI-generated insight:** model-generated interpretation that may be uncertain.
+
+Do not merge all four into a single unlabeled “stress score”.
+
+Do not describe a user as mentally ill or diagnose a condition.
+
+Use “may be associated with”, “coincided with” or “your records show” rather than causal language unless a valid causal study supports the claim.
+
+---
+
+## 15. States and feedback
+
+Every important screen/component must consider:
+
+- Default.
+- Loading.
+- Empty / first use.
+- Error.
+- Offline / unavailable.
+- Permission not granted.
+- Partial data / missing modality.
+- Success / saved.
+- Disabled.
+
+For permission-dependent features, explain why permission is needed and allow users to continue without enabling it.
+
+Use concise, respectful error messages with a clear recovery action.
+
+---
+
+## 16. Motion and micro-interactions
+
+- Use short transitions, generally around 150–240 ms.
+- Prefer subtle fade, scale or position changes.
+- Avoid bouncing, pulsing or animated effects that could feel distracting.
+- Use haptics sparingly and only for meaningful actions where platform conventions support it.
+- Respect reduced-motion settings.
+- Never animate a stress indicator in a way that suggests urgency without a genuine safety reason.
+
+---
+
+## 17. Accessibility requirements
+
+- Target WCAG 2.2 AA contrast for relevant text and UI elements where applicable.
+- Support OS font scaling.
+- Provide accessible names and labels for icon-only controls.
+- Maintain large touch targets and adequate spacing.
+- Do not encode information through colour alone.
+- Ensure keyboard and screen-reader navigation where supported.
+- Provide chart summaries or data alternatives.
+- Respect reduced-motion preferences.
+- Use plain language, particularly for consent and well-being insights.
+
+Neumorphic styling must never be allowed to make a control indistinguishable from its background.
+
+---
+
+## 18. Dark mode
+
+Dark mode is **not part of the initial visual implementation scope** unless explicitly approved later. Build tokens and components so a dark theme can be introduced without rewriting screen layouts.
+
+---
+
+## 19. Design implementation rules
+
+1. Implement the design system as reusable tokens and components.
+2. Do not hard-code slightly different versions of the same colour, radius, spacing or shadow across screens.
+3. Do not use the supplied UI Toolkit board as a full-screen image or as a substitute for functional components.
+4. Avoid text baked into images; use native text elements.
+5. Use scalable layouts that adapt to common phone sizes and safe areas.
+6. Use realistic content, but mark demo values as sample data.
+7. Keep the UI modular and testable.
+8. Preserve platform conventions for system navigation, permissions and accessibility.
+9. Do not implement backend, model or data integrations merely to make a visual screen appear functional.
+10. Keep implementation aligned with the approved SENSE project charter and current repository state.
+
+---
+
+## 20. Design acceptance checklist
+
+The visual implementation is acceptable when:
+
+- [ ] The app consistently uses the SENSE navy/blue/cyan palette.
+- [ ] The default experience is light, predominantly white and pale blue.
+- [ ] Neumorphism is subtle and never harms contrast or affordance.
+- [ ] Typography follows a consistent scale.
+- [ ] Spacing, radii and shadows use shared tokens.
+- [ ] Buttons, fields, chips, cards and navigation have defined states.
+- [ ] The home screen distinguishes reported values from AI-generated insights.
+- [ ] Charts include labels, date ranges and honest data provenance.
+- [ ] All six input modalities are optional and permission-aware.
+- [ ] Empty, loading, error, offline and permission-denied states are considered.
+- [ ] The UI adapts to different phone sizes and system insets.
+- [ ] Accessibility has been reviewed.
+- [ ] No JalDrishti-specific logo or branding has been reused.
+- [ ] The supplied presentation has been treated as visual guidance, not copied as an image.
+
+---
+
+**End of SENSE UI Design System.**
