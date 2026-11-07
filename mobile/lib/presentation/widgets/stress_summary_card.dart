@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'sense_tappable.dart';
 
 class StressSummaryCard extends StatelessWidget {
   final String statusText;      // e.g. "No pattern yet" until a real baseline exists
@@ -18,14 +19,9 @@ class StressSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // When tappable, announced as one button labelled with the card's text.
-    return MergeSemantics(
-      child: Semantics(
-      button: onTap != null,
-      child: GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
+    // When tappable: one button labelled with the card's text, with a tap
+    // action, keyboard focus and a visible focus ring (SenseTappable).
+    final card = Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -163,9 +159,12 @@ class StressSummaryCard extends StatelessWidget {
             ],
           ],
         ),
-      ),
-      ),
-      ),
+      );
+    if (onTap == null) return card;
+    return SenseTappable(
+      onTap: onTap,
+      borderRadius: SenseRadii.xlBorder,
+      child: card,
     );
   }
 }

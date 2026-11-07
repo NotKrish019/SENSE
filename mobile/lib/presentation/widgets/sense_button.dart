@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'sense_tappable.dart';
 
 enum SenseButtonVariant { primary, secondary, outline, text }
 
@@ -174,17 +175,14 @@ class _SenseButtonState extends State<SenseButton> {
       button = SizedBox(width: double.infinity, child: button);
     }
 
-    return Semantics(
-      button: true,
-      enabled: !isDisabled,
-      child: GestureDetector(
-      onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
-      onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
-      onTapCancel: isDisabled ? null : () => setState(() => _isPressed = false),
-      onTap: widget.onPressed,
-      behavior: HitTestBehavior.opaque,
+    // Label = the visible text; tap action, keyboard focus (Enter/Space) and
+    // focus ring come from SenseTappable. Disabled buttons are announced as
+    // disabled and are not focusable.
+    return SenseTappable(
+      onTap: isDisabled ? null : widget.onPressed,
+      onHighlightChanged: isDisabled ? null : (v) => setState(() => _isPressed = v),
+      borderRadius: radius,
       child: button,
-      ),
     );
   }
 }

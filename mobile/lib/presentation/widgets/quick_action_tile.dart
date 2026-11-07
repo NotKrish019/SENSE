@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'sense_tappable.dart';
 
 class QuickActionTile extends StatefulWidget {
   final String label;
@@ -24,16 +25,11 @@ class _QuickActionTileState extends State<QuickActionTile> {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: widget.label,
-      excludeSemantics: true,
-      child: GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
+    return SenseTappable(
+      semanticLabel: widget.label,
       onTap: widget.onTap,
-      behavior: HitTestBehavior.opaque,
+      onHighlightChanged: (v) => setState(() => _isPressed = v),
+      borderRadius: SenseRadii.lgBorder,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -90,7 +86,6 @@ class _QuickActionTileState extends State<QuickActionTile> {
             ],
           ],
         ),
-      ),
       ),
     );
   }

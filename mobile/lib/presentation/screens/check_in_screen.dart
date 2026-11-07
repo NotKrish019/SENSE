@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_tappable.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_navigation.dart';
@@ -174,13 +175,11 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   runSpacing: gap,
                   children: _moodOptions.map((opt) {
                     final isSelected = (_selectedMood == opt['val']);
-                    return Semantics(
-                      button: true,
+                    return SenseTappable(
+                      semanticLabel: 'Mood: ${opt['label']}',
                       selected: isSelected,
-                      label: 'Mood: ${opt['label']}',
-                      excludeSemantics: true,
-                      child: GestureDetector(
                       onTap: () => setState(() => _selectedMood = opt['val'] as int),
+                      borderRadius: SenseRadii.mdBorder,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 150),
                         width: itemWidth,
@@ -213,7 +212,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
                           ],
                         ),
                       ),
-                      ),
                     );
                   }).toList(),
                   );
@@ -239,15 +237,20 @@ class _CheckInScreenState extends State<CheckInScreen> {
                         valueLabel: 'Rating: $_motivationLevel / 5',
                         maxLabel: 'High Energy',
                       ),
-                      Slider(
-                        value: _motivationLevel.toDouble(),
-                        min: 1,
-                        max: 5,
-                        divisions: 4,
-                        activeColor: SenseColors.blue600,
-                        inactiveColor: const Color(0xFFD6EFFC),
-                        onChanged: (v) => setState(() => _motivationLevel = v.round()),
-                      ),
+                      MergeSemantics(child: Semantics(
+                        // Name merged into the slider's own node (Task 8): it previously had none.
+                        label: 'Motivation or energy level',
+                        child: Slider(
+                          semanticFormatterCallback: (v) => '${v.round()} of 5',
+                          value: _motivationLevel.toDouble(),
+                          min: 1,
+                          max: 5,
+                          divisions: 4,
+                          activeColor: SenseColors.blue600,
+                          inactiveColor: const Color(0xFFD6EFFC),
+                          onChanged: (v) => setState(() => _motivationLevel = v.round()),
+                        ),
+                      )),
                     ],
                   ),
                 ),
@@ -281,17 +284,22 @@ class _CheckInScreenState extends State<CheckInScreen> {
                           color: _perceivedStress >= 4 ? SenseColors.warning : SenseColors.blue800,
                         ),
                       ),
-                      Slider(
-                        value: _perceivedStress.toDouble(),
-                        min: 1,
-                        max: 5,
-                        divisions: 4,
-                        activeColor: _perceivedStress >= 4
-                            ? SenseColors.warning
-                            : SenseColors.blue600,
-                        inactiveColor: const Color(0xFFD6EFFC),
-                        onChanged: (v) => setState(() => _perceivedStress = v.round()),
-                      ),
+                      MergeSemantics(child: Semantics(
+                        // Name merged into the slider's own node (Task 8): it previously had none.
+                        label: 'Perceived stress',
+                        child: Slider(
+                          semanticFormatterCallback: (v) => '${v.round()} of 5',
+                          value: _perceivedStress.toDouble(),
+                          min: 1,
+                          max: 5,
+                          divisions: 4,
+                          activeColor: _perceivedStress >= 4
+                              ? SenseColors.warning
+                              : SenseColors.blue600,
+                          inactiveColor: const Color(0xFFD6EFFC),
+                          onChanged: (v) => setState(() => _perceivedStress = v.round()),
+                        ),
+                      )),
                     ],
                   ),
                 ),

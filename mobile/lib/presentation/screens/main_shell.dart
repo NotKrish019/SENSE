@@ -53,9 +53,18 @@ class _MainShellState extends State<MainShell> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _select(MainTab.home);
       },
-      child: Scaffold(
+      // Keyboard focus order: all of the current page first, then the bottom
+      // bar (Home, Insights, +, Profile). Without explicit groups, Flutter's
+      // position-based ordering jumped to the bar while a card was partly
+      // hidden behind it, then back up to the card.
+      child: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
+        child: Scaffold(
         backgroundColor: SenseColors.background,
-        body: IndexedStack(
+        body: FocusTraversalOrder(
+          order: const NumericFocusOrder(1),
+          child: FocusTraversalGroup(
+            child: IndexedStack(
           index: _index,
           children: [
             DashboardScreen(
@@ -65,11 +74,19 @@ class _MainShellState extends State<MainShell> {
             const InsightsScreen(isTabRoot: true),
             const SettingsScreen(isTabRoot: true),
           ],
+            ),
+          ),
         ),
-        bottomNavigationBar: SenseBottomNavBar(
-          currentIndex: _index,
-          onTap: _select,
-          onAddTap: _openCheckIn,
+        bottomNavigationBar: FocusTraversalOrder(
+          order: const NumericFocusOrder(2),
+          child: FocusTraversalGroup(
+            child: SenseBottomNavBar(
+              currentIndex: _index,
+              onTap: _select,
+              onAddTap: _openCheckIn,
+            ),
+          ),
+        ),
         ),
       ),
     );

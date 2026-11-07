@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'sense_tappable.dart';
 
 class SenseCard extends StatelessWidget {
   final Widget child;
@@ -38,16 +39,12 @@ class SenseCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      // Announced as a single button whose label is the card's text.
-      return MergeSemantics(
-        child: Semantics(
-          button: true,
-          child: GestureDetector(
-            onTap: onTap,
-            behavior: HitTestBehavior.opaque,
-            child: card,
-          ),
-        ),
+      // Announced as a single button whose label is the card's text, with a
+      // tap action, keyboard focus and a visible focus ring.
+      return SenseTappable(
+        onTap: onTap,
+        borderRadius: borderRadius ?? SenseRadii.lgBorder,
+        child: card,
       );
     }
 

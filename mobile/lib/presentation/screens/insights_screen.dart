@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_tappable.dart';
 import '../widgets/sense_card.dart';
 import '../widgets/sense_charts.dart';
 import '../widgets/sense_navigation.dart';
@@ -65,16 +66,16 @@ class _InsightsScreenState extends State<InsightsScreen> {
                   children: _periods.map((p) {
                     final isSel = (_selectedPeriod == p);
                     return Expanded(
-                      child: Semantics(
-                        button: true,
+                      child: SenseTappable(
+                        semanticLabel: '$p view',
+                        semanticHint: 'Sample charts do not change yet',
                         selected: isSel,
-                        label: '$p view',
-                        hint: 'Sample charts do not change yet',
-                        excludeSemantics: true,
-                        child: GestureDetector(
                         onTap: () => setState(() => _selectedPeriod = p),
+                        borderRadius: SenseRadii.pillBorder,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
+                          // 48 px minimum touch target (was ~33 px).
+                          constraints: const BoxConstraints(minHeight: 48),
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
@@ -89,7 +90,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
                             ),
                           ),
                         ),
-                      ),
                       ),
                     );
                   }).toList(),

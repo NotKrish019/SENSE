@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_tappable.dart';
 import '../widgets/sample_data_banner.dart';
 import '../widgets/sense_chips.dart';
 import '../widgets/sense_button.dart';
@@ -98,15 +99,20 @@ class _SleepScreenState extends State<SleepScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Slider(
-                      value: _sleepHours,
-                      min: 4.0,
-                      max: 12.0,
-                      divisions: 16,
-                      activeColor: SenseColors.blue600,
-                      inactiveColor: const Color(0xFFD6EFFC),
-                      onChanged: (v) => setState(() => _sleepHours = v),
-                    ),
+                    MergeSemantics(child: Semantics(
+                      // Name merged into the slider's own node (Task 8): it previously had none.
+                      label: 'Sleep duration',
+                      child: Slider(
+                        semanticFormatterCallback: (v) => '${v.toStringAsFixed(1)} hours',
+                        value: _sleepHours,
+                        min: 4.0,
+                        max: 12.0,
+                        divisions: 16,
+                        activeColor: SenseColors.blue600,
+                        inactiveColor: const Color(0xFFD6EFFC),
+                        onChanged: (v) => setState(() => _sleepHours = v),
+                      ),
+                    )),
                   ],
                 ),
               ),
@@ -122,14 +128,12 @@ class _SleepScreenState extends State<SleepScreen> {
                         children: [
                           Text('Bedtime', style: SenseTypography.caption),
                           const SizedBox(height: 6),
-                          Semantics(
-                            button: true,
-                            label: 'Bedtime: ${_bedtime.format(context)}. Tap to change.',
-                            excludeSemantics: true,
-                            child: InkWell(
-                              onTap: _pickBedtime,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(minHeight: 44),
+                          SenseTappable(
+                            semanticLabel: 'Bedtime: ${_bedtime.format(context)}. Tap to change.',
+                            onTap: _pickBedtime,
+                            borderRadius: SenseRadii.smBorder,
+                            child: ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 48),
                                 child: Row(
                                   children: [
                                     const Icon(Icons.nightlight_round, size: 18, color: SenseColors.blue600),
@@ -146,7 +150,6 @@ class _SleepScreenState extends State<SleepScreen> {
                                   ],
                                 ),
                               ),
-                            ),
                           ),
                         ],
                       ),
@@ -157,14 +160,12 @@ class _SleepScreenState extends State<SleepScreen> {
                         children: [
                           Text('Wake Time', style: SenseTypography.caption),
                           const SizedBox(height: 6),
-                          Semantics(
-                            button: true,
-                            label: 'Wake time: ${_wakeTime.format(context)}. Tap to change.',
-                            excludeSemantics: true,
-                            child: InkWell(
-                              onTap: _pickWakeTime,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(minHeight: 44),
+                          SenseTappable(
+                            semanticLabel: 'Wake time: ${_wakeTime.format(context)}. Tap to change.',
+                            onTap: _pickWakeTime,
+                            borderRadius: SenseRadii.smBorder,
+                            child: ConstrainedBox(
+                                constraints: const BoxConstraints(minHeight: 48),
                                 child: Row(
                                   children: [
                                     const Icon(Icons.wb_sunny_outlined, size: 18, color: SenseColors.cyan500),
@@ -181,7 +182,6 @@ class _SleepScreenState extends State<SleepScreen> {
                                   ],
                                 ),
                               ),
-                            ),
                           ),
                         ],
                       ),
@@ -218,31 +218,36 @@ class _SleepScreenState extends State<SleepScreen> {
                   children: List.generate(5, (i) {
                     final rating = i + 1;
                     final isSelected = (_sleepQuality == rating);
-                    return Semantics(
-                      button: true,
+                    // Unselected: outline star in textMuted (5.1:1 on white,
+                    // was grey 1.9:1) and number in textSecondary (6.0:1).
+                    // Selected: filled Electric Blue star (3.1:1, non-text) and
+                    // bold Ocean Blue number, so the states differ by shape,
+                    // weight and colour, not colour alone.
+                    return SenseTappable(
+                      semanticLabel: 'Rest quality $rating of 5',
                       selected: isSelected,
-                      label: 'Rest quality $rating of 5',
-                      excludeSemantics: true,
-                      child: GestureDetector(
                       onTap: () => setState(() => _sleepQuality = rating),
-                      behavior: HitTestBehavior.opaque,
-                      child: Column(
-                        children: [
-                          Icon(
-                            isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
-                            color: isSelected ? SenseColors.blue600 : Colors.grey.shade400,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$rating',
-                            style: SenseTypography.caption.copyWith(
-                              color: isSelected ? SenseColors.blue800 : Colors.grey,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
+                      borderRadius: SenseRadii.mdBorder,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                              color: isSelected ? SenseColors.blue600 : SenseColors.textMuted,
+                              size: 32,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$rating',
+                              style: SenseTypography.caption.copyWith(
+                                color: isSelected ? SenseColors.blue800 : SenseColors.textSecondary,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }),
@@ -298,7 +303,12 @@ class _SleepScreenState extends State<SleepScreen> {
                             child: Text(
                               '${h.toStringAsFixed(0)}h',
                               maxLines: 1,
-                              style: SenseTypography.caption.copyWith(fontSize: 10),
+                              // 11 px (was 10) in the primary text colour, so
+                              // the small glyphs stay clearly readable.
+                              style: SenseTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: SenseColors.textPrimary,
+                              ),
                             ),
                           ),
                         ],

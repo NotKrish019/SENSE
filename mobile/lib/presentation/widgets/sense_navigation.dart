@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'sense_tappable.dart';
 
 class SenseAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -116,16 +117,14 @@ class SenseBottomNavBar extends StatelessWidget {
                   // a plain Center would expand to the full screen height.
                   child: Center(
                     heightFactor: 1,
-                    child: Semantics(
-                      button: true,
-                      label: 'New daily check-in',
-                      excludeSemantics: true,
-                      child: Tooltip(
-                        message: 'New daily check-in',
-                        child: InkResponse(
-                          onTap: onAddTap,
-                          radius: 30,
-                          child: Container(
+                    // One semantics node with the tap action, keyboard focus
+                    // (Enter/Space) and a visible focus ring.
+                    child: SenseTappable(
+                      semanticLabel: 'New daily check-in',
+                      tooltip: 'New daily check-in',
+                      circle: true,
+                      onTap: onAddTap,
+                      child: Container(
                             width: 52,
                             height: 52,
                             decoration: BoxDecoration(
@@ -145,8 +144,6 @@ class SenseBottomNavBar extends StatelessWidget {
                               size: 28,
                             ),
                           ),
-                        ),
-                      ),
                     ),
                   ),
                 ),
@@ -177,14 +174,12 @@ class SenseBottomNavBar extends StatelessWidget {
     final color = isActive ? SenseColors.blue600 : SenseColors.textSecondary;
     final labelColor = isActive ? SenseColors.textAccent : SenseColors.textSecondary;
     return Expanded(
-      child: Semantics(
-        button: true,
+      child: SenseTappable(
+        semanticLabel: '$label tab',
         selected: isActive,
-        label: '$label tab',
-        excludeSemantics: true,
-        child: InkWell(
-          onTap: () => onTap(index),
-          child: Padding(
+        onTap: () => onTap(index),
+        borderRadius: SenseRadii.mdBorder,
+        child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -218,7 +213,6 @@ class SenseBottomNavBar extends StatelessWidget {
               ],
             ),
           ),
-        ),
       ),
     );
   }

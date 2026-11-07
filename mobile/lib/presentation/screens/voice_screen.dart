@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_tappable.dart';
 import '../widgets/sample_data_banner.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
@@ -132,14 +133,12 @@ class _VoiceScreenState extends State<VoiceScreen> {
 
                     // Mic Action Button (icon-only, so it carries an explicit
                     // label that also states no audio is recorded)
-                    Semantics(
-                      button: true,
-                      label: _isRecording
+                    SenseTappable(
+                      semanticLabel: _isRecording
                           ? 'Stop demo. No audio is being recorded.'
                           : 'Start demo of the planned recording screen. No audio is recorded.',
-                      excludeSemantics: true,
-                      child: GestureDetector(
                       onTap: _toggleRecording,
+                      circle: true,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: 90,
@@ -165,7 +164,6 @@ class _VoiceScreenState extends State<VoiceScreen> {
                           size: 40,
                         ),
                       ),
-                    ),
                     ),
                     const SizedBox(height: 24),
 

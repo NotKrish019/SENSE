@@ -134,8 +134,8 @@ While it runs: press `r` (hot reload) or `R` (hot restart) after code changes, `
 
 Other useful commands (run inside `mobile/`):
 ```bash
-flutter analyze                   # static analysis (0 errors at last check)
-flutter test                      # 217 widget + unit tests
+flutter analyze                   # static analysis: 0 errors; 4 known warnings + 3 infos, so it exits 1
+flutter test                      # 273 tests: 9 domain/safety unit + 264 widget (layout, accessibility, interaction)
 dart run test/run_all_tests.dart  # plain-Dart assertion runner (17 assertions)
 flutter build web                 # production web build into mobile/build/web
 ```
@@ -150,7 +150,8 @@ flutter build web                 # production web build into mobile/build/web
 # Python research pipeline (24 tests — verified passing 2026-11-07)
 python3 -m pytest -q
 
-# Dart / Flutter (verified 2026-11-07: flutter test 217/217 passed; run_all_tests.dart 17/17 assertions passed)
+# Dart / Flutter (verified 2026-11-07: flutter test 273/273 passed; run_all_tests.dart 17/17 assertions passed)
+# Automated semantics tests and Chrome checks only: no real VoiceOver/TalkBack session and no native Android build yet.
 cd mobile && flutter test && dart run test/run_all_tests.dart
 
 # Rust backend (11 tests — not yet verified; .cargo/config.toml currently forces a Windows target)

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'sense_tappable.dart';
 import '../../core/constants/prototype_copy.dart';
 
 class SenseFilterChip extends StatelessWidget {
@@ -16,13 +17,16 @@ class SenseFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
+    // 48 px tall touch target; the visible chip stays compact and centred.
+    return SenseTappable(
+      semanticLabel: label,
       selected: isSelected,
-      label: label,
-      excludeSemantics: true,
-      child: GestureDetector(
       onTap: onTap,
+      borderRadius: SenseRadii.pillBorder,
+      child: ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Center(
+      heightFactor: 1,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -46,6 +50,7 @@ class SenseFilterChip extends StatelessWidget {
                   color: SenseColors.textSecondary,
                 ),
         ),
+      ),
       ),
       ),
     );

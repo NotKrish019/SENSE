@@ -152,7 +152,11 @@ class _JournalScreenState extends State<JournalScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextField(
+                    // Persistent accessible name: the hint disappears once
+                    // text is typed, so it cannot be the field's only label.
+                    Semantics(
+                      label: 'Journal reflection',
+                      child: TextField(
                         controller: _controller,
                         minLines: 7,
                         maxLines: null,
@@ -170,6 +174,7 @@ class _JournalScreenState extends State<JournalScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                         ),
+                    ),
                     ),
                     const Divider(color: SenseColors.border, height: 16),
                     // Counter and "not saved" notice wrap onto two lines if needed;
