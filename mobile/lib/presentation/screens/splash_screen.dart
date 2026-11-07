@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_logo.dart';
 import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -30,14 +31,11 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Abstract circular signal/pulse motif (matching UI Toolkit Board header)
-            Container(
-              width: 80,
-              height: 80,
+            // SENSE mark (badge variant): two signal paths meeting at a node.
+            const DecoratedBox(
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: SenseColors.primaryActionGradient,
-                boxShadow: const [
+                borderRadius: BorderRadius.all(Radius.circular(18)),
+                boxShadow: [
                   BoxShadow(
                     color: Color(0x66059BE0),
                     blurRadius: 28,
@@ -45,11 +43,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.waves_rounded,
-                color: SenseColors.white,
-                size: 42,
-              ),
+              child: SenseLogoMark(size: 80),
             ),
             const SizedBox(height: 24),
             Text(

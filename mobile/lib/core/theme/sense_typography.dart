@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'sense_colors.dart';
 
 /// Authoritative SENSE Typography Scale from design.md & UI Toolkit Board.
+///
+/// Poppins is bundled with the app (pubspec.yaml, weights 400/500/600/700/800;
+/// SIL Open Font License), so it never depends on a network download. The
+/// fallbacks only apply to glyphs Poppins lacks (e.g. emoji) or if the asset
+/// fails to load.
 class SenseTypography {
   static const String fontFamily = 'Poppins';
   static const List<String> fontFallbacks = [
-    'Montserrat',
     '-apple-system',
     'BlinkMacSystemFont',
     'Segoe UI',

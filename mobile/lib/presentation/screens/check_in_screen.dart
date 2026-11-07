@@ -140,13 +140,35 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
                 // Mood Selection Grid (Emoticons + text labels): options are sized
                 // from the available width — 5 per row normally, 3 per row
-                // (wrapping) on narrow screens or with large text.
+                // (wrapping) on narrow screens or with large text, and 2 per row
+                // if the widest label (bold, as when selected) would otherwise
+                // be broken mid-word.
                 LayoutBuilder(builder: (context, constraints) {
                   const gap = 8.0;
-                  final scale = MediaQuery.textScalerOf(context).scale(1.0);
-                  final perRow = (constraints.maxWidth < 330 || scale >= 1.3) ? 3 : 5;
-                  final itemWidth =
-                      ((constraints.maxWidth - gap * (perRow - 1)) / perRow).floorToDouble();
+                  final textScaler = MediaQuery.textScalerOf(context);
+                  final scale = textScaler.scale(1.0);
+                  double widestLabel = 0;
+                  for (final opt in _moodOptions) {
+                    final tp = TextPainter(
+                      text: TextSpan(
+                        text: opt['label'] as String,
+                        style: SenseTypography.caption
+                            .copyWith(fontWeight: FontWeight.w700, fontSize: 11),
+                      ),
+                      textDirection: TextDirection.ltr,
+                      textScaler: textScaler,
+                      maxLines: 1,
+                    )..layout();
+                    if (tp.width > widestLabel) widestLabel = tp.width;
+                    tp.dispose();
+                  }
+                  double widthFor(int n) =>
+                      ((constraints.maxWidth - gap * (n - 1)) / n).floorToDouble();
+                  var perRow = (constraints.maxWidth < 330 || scale >= 1.3) ? 3 : 5;
+                  while (perRow > 2 && widestLabel + 4 > widthFor(perRow)) {
+                    perRow = perRow == 5 ? 3 : 2;
+                  }
+                  final itemWidth = widthFor(perRow);
                   return Wrap(
                   spacing: gap,
                   runSpacing: gap,

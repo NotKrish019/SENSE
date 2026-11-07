@@ -180,6 +180,16 @@ class SenseWeeklyBarChart extends StatelessWidget {
     this.isSampleData = false,
   });
 
+  /// Weekday label style: used both to draw and to measure the labels.
+  /// Letter spacing is set explicitly so the theme's body letter spacing
+  /// (0.25) is not inherited.
+  static TextStyle _dayLabelStyle(bool isToday) => SenseTypography.caption.copyWith(
+        fontSize: 11,
+        letterSpacing: 0,
+        color: isToday ? SenseColors.navy900 : SenseColors.textSecondary,
+        fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+      );
+
   @override
   Widget build(BuildContext context) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -203,24 +213,28 @@ class SenseWeeklyBarChart extends StatelessWidget {
             const SenseProvenanceBadge.sampleData(),
           ],
           const SizedBox(height: 18),
-          // Each day gets an equal slot. If 3-letter labels ("Wed") do not fit
-          // a slot at the current text size, single letters (M T W …) are
-          // shown at full size instead of squeezing words together; every bar
-          // is still announced with its full day name.
+          // Each day gets an equal slot. If any 3-letter label does not fit its
+          // slot at the current text size, single letters (M T W …) are shown
+          // at full size instead of squeezing words together; every bar is
+          // still announced with its full day name. Each label is measured in
+          // the font and weight it is actually drawn with (bundled Poppins;
+          // only "today" is bold).
           LayoutBuilder(builder: (context, constraints) {
-            final labelStyle = SenseTypography.caption.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            );
-            final painter = TextPainter(
-              text: TextSpan(text: 'Wed', style: labelStyle),
-              textScaler: MediaQuery.textScalerOf(context),
-              textDirection: TextDirection.ltr,
-              maxLines: 1,
-            )..layout();
+            final textScaler = MediaQuery.textScalerOf(context);
             final slot = constraints.maxWidth / 7;
-            final compact = painter.width + 2 > slot;
-            painter.dispose();
+            var compact = false;
+            for (var i = 0; i < days.length && !compact; i++) {
+              final painter = TextPainter(
+                text: TextSpan(
+                    text: days[i],
+                    style: DefaultTextStyle.of(context).style.merge(_dayLabelStyle(i == 4))),
+                textScaler: textScaler,
+                textDirection: TextDirection.ltr,
+                maxLines: 1,
+              )..layout();
+              compact = painter.width > slot;
+              painter.dispose();
+            }
             return Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(7, (i) {
@@ -255,11 +269,7 @@ class SenseWeeklyBarChart extends StatelessWidget {
                           compact ? days[i].substring(0, 1) : days[i],
                           maxLines: 1,
                           softWrap: false,
-                          style: SenseTypography.caption.copyWith(
-                            fontSize: 11,
-                            color: isToday ? SenseColors.navy900 : SenseColors.textSecondary,
-                            fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                          ),
+                          style: _dayLabelStyle(isToday),
                         ),
                       ],
                     ),

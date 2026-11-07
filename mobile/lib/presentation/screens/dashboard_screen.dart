@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_logo.dart';
 import '../../core/constants/prototype_copy.dart';
 import '../widgets/quick_action_tile.dart';
 import '../widgets/stress_summary_card.dart';
@@ -52,19 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: SenseColors.primaryActionGradient,
-                        ),
-                        child: const Icon(
-                          Icons.waves_rounded,
-                          color: SenseColors.white,
-                          size: 20,
-                        ),
-                      ),
+                      const SenseLogoMark(size: 36),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(

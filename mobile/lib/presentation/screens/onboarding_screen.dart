@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/sense_logo.dart';
 import '../widgets/sense_button.dart';
 import '../widgets/sense_card.dart';
 import 'consent_screen.dart';
@@ -58,15 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: SenseColors.primaryActionGradient,
-                        ),
-                        child: const Icon(Icons.waves_rounded, color: SenseColors.white, size: 18),
-                      ),
+                      const SenseLogoMark(size: 32),
                       const SizedBox(width: 8),
                       Text(
                         'SENSE',

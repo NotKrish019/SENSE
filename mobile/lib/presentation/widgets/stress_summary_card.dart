@@ -42,58 +42,82 @@ class StressSummaryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                  children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: const Color(0x2607CCFC),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0x4D07CCFC), width: 1.0),
-                      ),
-                      child: const Icon(
-                        Icons.insights_rounded,
-                        color: SenseColors.cyan300,
-                        size: 20,
-                      ),
+            // Icon + titles + chevron in one row, unless the longest word of
+            // the title cannot fit beside the icon (narrow screen / large
+            // text): then the titles get the full card width below the icon,
+            // so words are never broken mid-word.
+            LayoutBuilder(builder: (context, constraints) {
+              final titleStyle = SenseTypography.h2.copyWith(
+                color: SenseColors.textOnDark,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              );
+              final titles = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current Stress Pattern',
+                    style: SenseTypography.label.copyWith(
+                      color: const Color(0xFFB0D9F7),
+                      fontSize: 13,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Current Stress Pattern',
-                          style: SenseTypography.label.copyWith(
-                            color: const Color(0xFFB0D9F7),
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          statusText,
-                          style: SenseTypography.h2.copyWith(
-                            color: SenseColors.textOnDark,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                      ),
-                    ),
-                  ],
                   ),
+                  Text(statusText, style: titleStyle),
+                ],
+              );
+              final icon = Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0x2607CCFC),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0x4D07CCFC), width: 1.0),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFFB0D9F7),
-                  size: 24,
+                child: const Icon(
+                  Icons.insights_rounded,
+                  color: SenseColors.cyan300,
+                  size: 20,
                 ),
-              ],
-            ),
+              );
+              const chevron = Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFFB0D9F7),
+                size: 24,
+              );
+              final longestWord = statusText
+                  .split(' ')
+                  .fold<String>('', (a, b) => b.length > a.length ? b : a);
+              final painter = TextPainter(
+                text: TextSpan(text: longestWord, style: titleStyle),
+                textDirection: TextDirection.ltr,
+                textScaler: MediaQuery.textScalerOf(context),
+                maxLines: 1,
+              )..layout();
+              final wordWidth = painter.width;
+              painter.dispose();
+              final inlineWidth = constraints.maxWidth - 36 - 12 - 24;
+              if (wordWidth + 2 <= inlineWidth) {
+                return Row(
+                  children: [
+                    icon,
+                    const SizedBox(width: 12),
+                    Expanded(child: titles),
+                    chevron,
+                  ],
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [icon, chevron],
+                  ),
+                  const SizedBox(height: 10),
+                  titles,
+                ],
+              );
+            }),
             if (scoreFraction != null) ...[
             const SizedBox(height: 18),
             // Cyan gradient progress bar matching the UI Toolkit board
