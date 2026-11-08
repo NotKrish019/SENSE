@@ -35,6 +35,15 @@ void main() {
 
   Future<Database> open([UtcClock? clock]) => SenseDatabase.open(factory: factory, path: path, clock: clock);
 
+  // Milestone B: daily writes need the matching preference ON. Recorded
+  // through a separate store so the tests' stepping clocks are not consumed.
+  Future<void> allowAll(Database db, String person) async {
+    final consent = LocalDataStore(db).consent;
+    for (final m in kModalityCodes) {
+      await consent.recordChange(person, m, true);
+    }
+  }
+
   Future<List<String>> tables(Database db) async => (await db
           .rawQuery("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"))
       .map((r) => r['name'] as String)
@@ -93,14 +102,14 @@ void main() {
       final store = LocalDataStore(db);
       final person = await store.profiles.ensureActive();
       expect(await db.query('consent_events'), isEmpty);
-      expect(await store.consentHistory.currentPreferences(person.localPersonId),
+      expect(await store.consent.currentPreferences(person.localPersonId),
           {'M1': false, 'M2': false, 'M3': false, 'M4': false, 'M5': false, 'M6': false});
-      // The reader follows the latest event per modality (events are Milestone B).
+      // The reader follows the latest event per modality.
       await db.insert('consent_events',
-          {'local_person_id': person.localPersonId, 'modality': 'M3', 'enabled': 1, 'changed_at_utc': 'x'});
+          {'local_person_id': person.localPersonId, 'modality': 'M3', 'enabled': 1, 'changed_at_utc': '2026-11-08T09:00:00.000Z'});
       await db.insert('consent_events',
-          {'local_person_id': person.localPersonId, 'modality': 'M3', 'enabled': 0, 'changed_at_utc': 'y'});
-      expect((await store.consentHistory.currentPreferences(person.localPersonId))['M3'], isFalse);
+          {'local_person_id': person.localPersonId, 'modality': 'M3', 'enabled': 0, 'changed_at_utc': '2026-11-08T09:00:01.000Z'});
+      expect((await store.consent.currentPreferences(person.localPersonId))['M3'], isFalse);
       await db.close();
     });
   });
@@ -179,7 +188,7 @@ void main() {
       // The legacy pre-ticked consent is never read: preferences start OFF.
       final store = LocalDataStore(db);
       final person = await store.profiles.ensureActive();
-      expect((await store.consentHistory.currentPreferences(person.localPersonId)).values, everyElement(isFalse));
+      expect((await store.consent.currentPreferences(person.localPersonId)).values, everyElement(isFalse));
       final notes = (await db.query('migration_log', orderBy: 'id')).last['notes'] as String;
       expect(notes, contains('check_ins -> legacy_v1_check_ins (1 rows)'));
       expect(notes, contains('may contain plaintext and is not ciphertext'));
@@ -270,6 +279,7 @@ void main() {
       db = await open(steppingClock());
       store = LocalDataStore(db, clock: steppingClock(DateTime.utc(2026, 11, 8, 10)));
       person = (await store.profiles.ensureActive()).localPersonId;
+      await allowAll(db, person);
     });
     tearDown(() => db.close());
 
@@ -353,6 +363,7 @@ void main() {
     final db = await open(steppingClock());
     final store = LocalDataStore(db, clock: steppingClock(DateTime.utc(2026, 11, 8, 10)));
     final person = (await store.profiles.ensureActive()).localPersonId;
+    await allowAll(db, person);
     final first = await store.checkIns.upsert(person, checkIn());
     final second = await store.checkIns.upsert(person, checkIn(stress: 5, changed: {'perceived_stress_rating'}));
     expect(second.id, first.id);
@@ -532,6 +543,7 @@ void main() {
       final db = await open(steppingClock());
       final store = LocalDataStore(db);
       final person = (await store.profiles.ensureActive()).localPersonId;
+      await allowAll(db, person);
       SleepEntry sleep(String bed, String wake, LocalDay d) => SleepEntry(
           durationMinutes: 450,
           bedtimeLocal: bed,
@@ -556,9 +568,30 @@ void main() {
     test('foreign keys: a record for an unknown person is refused; deleting a profile cascades', () async {
       final db = await open(steppingClock());
       final store = LocalDataStore(db);
+      // Milestone B refuses an unknown person before the insert is attempted.
       await expectLater(store.checkIns.upsert('00000000-0000-4000-8000-00000000dead', checkIn()),
+          throwsA(isA<ConsentDeniedException>()));
+      // The foreign key still refuses it at the SQLite level.
+      await expectLater(
+          db.insert('check_ins', {
+            'id': '00000000-0000-4000-8000-000000000001',
+            'local_person_id': '00000000-0000-4000-8000-00000000dead',
+            'local_date': '2026-11-08',
+            'tz_offset_minutes': 0,
+            'created_at_utc': 'x',
+            'updated_at_utc': 'x',
+            'submitted_at_utc': 'x',
+            'schema_version': 2,
+            'explicitly_submitted': 1,
+            'changed_fields': '[]',
+            'default_fields': '[]',
+            'mood_rating': 3,
+            'motivation_energy_rating': 3,
+            'perceived_stress_rating': 2,
+          }),
           throwsA(isA<DatabaseException>()));
       final person = (await store.profiles.ensureActive()).localPersonId;
+      await allowAll(db, person);
       await store.checkIns.upsert(person, checkIn());
       expect(await store.profiles.delete(person), isTrue);
       expect(await db.query('check_ins'), isEmpty);
@@ -568,6 +601,7 @@ void main() {
     test('a transaction that fails rolls back every write in it', () async {
       final db = await open(steppingClock());
       final person = (await LocalDataStore(db).profiles.ensureActive()).localPersonId;
+      await allowAll(db, person);
       await expectLater(
         LocalDataStore.transaction(db, (store) async {
           await store.checkIns.upsert(person, checkIn());
@@ -590,6 +624,8 @@ void main() {
       final a = (await store.profiles.ensureActive()).localPersonId;
       const b = '11111111-1111-4111-8111-111111111111';
       await db.insert('local_profile', {'local_person_id': b, 'created_at_utc': 'x', 'is_active': 0});
+      await allowAll(db, a);
+      await allowAll(db, b);
       await store.checkIns.upsert(a, checkIn(mood: 1, changed: {'mood_rating'}));
       await store.checkIns.upsert(b, checkIn(mood: 5, changed: {'mood_rating'}));
       expect((await store.checkIns.byDate(a, '2026-11-08'))!.entry.moodRating, 1);

@@ -1,12 +1,13 @@
 // SENSE local data foundation (Milestone A): SQLite repository implementations.
 //
 // Pure Dart (sqflite's platform-independent API). Every daily write runs in a
-// transaction. DEVELOPMENT / TEST FOUNDATION ONLY: not encrypted, not used by
-// the app.
+// transaction that first checks the matching modality preference (Milestone
+// B). DEVELOPMENT / TEST FOUNDATION ONLY: not encrypted, not used by the app.
 
 import 'package:sqflite/sqlite_api.dart';
 import 'package:uuid/uuid.dart';
 
+import 'consent.dart';
 import 'records.dart';
 import 'repositories.dart';
 import 'schema.dart';
@@ -18,6 +19,12 @@ DateTime _systemUtc() => DateTime.now().toUtc();
 String _uuidV4() => const Uuid().v4();
 
 /// Runs [action] in a transaction, reusing one if [db] already is one.
+///
+/// sqflite begins transactions with `BEGIN IMMEDIATE`, which takes SQLite's
+/// write lock before the first statement, and queues every other operation on
+/// the same connection until the transaction ends. A consent check and the
+/// write that depends on it therefore see one consistent state: no consent
+/// change can commit between them.
 Future<R> _inTransaction<R>(DatabaseExecutor db, Future<R> Function(DatabaseExecutor txn) action) {
   if (db is Database) return db.transaction(action);
   return action(db);
@@ -70,6 +77,9 @@ class SqliteLocalProfileRepository implements LocalProfileRepository {
 /// Maps one daily record type to its table.
 abstract class DailyTableCodec<T extends DailyEntry> {
   String get table;
+
+  /// The modality preference that must be ON to write this table.
+  String get modality => kRequiredModalityByTable[table]!;
   Map<String, Object> columns(T entry);
   T fromRow(Map<String, Object?> row, LocalDay day, Provenance provenance);
 }
@@ -106,6 +116,8 @@ class SqliteDailyRecordRepository<T extends DailyEntry> implements DailyRecordRe
   Future<StoredRecord<T>> upsert(String localPersonId, T entry) {
     entry.validate();
     return _inTransaction(_db, (txn) async {
+      // Authorization first, in the same transaction as the write.
+      await requireConsent(txn, localPersonId, _codec.modality);
       final now = _now();
       final existing = await txn.query(_codec.table,
           columns: ['id', 'created_at_utc'],
@@ -254,22 +266,100 @@ class ActivityCodec extends DailyTableCodec<ActivityEntry> {
   }
 }
 
-class SqliteConsentHistoryReader implements ConsentHistoryReader {
+/// Throws [ConsentDeniedException] unless [localPersonId] exists and the
+/// latest event for [modality] enables it. Read with [txn], the executor of
+/// the write it guards. Any failure to read the state fails closed.
+Future<void> requireConsent(DatabaseExecutor txn, String localPersonId, String modality) async {
+  final ConsentEvent? latest = await _readLatestForAuthorization(txn, localPersonId, modality);
+  if (latest == null) throw ConsentDeniedException(modality, ConsentDenialReason.notRecorded);
+  if (!latest.enabled) throw ConsentDeniedException(modality, ConsentDenialReason.disabled);
+}
+
+Future<ConsentEvent?> _readLatestForAuthorization(DatabaseExecutor txn, String localPersonId, String modality) async {
+  try {
+    validateModality(modality);
+    final profile = await txn.query('local_profile',
+        columns: ['local_person_id'], where: 'local_person_id = ?', whereArgs: [localPersonId], limit: 1);
+    if (profile.isEmpty) throw ConsentDeniedException(modality, ConsentDenialReason.noProfile);
+    return await SqliteConsentRepository.latestEvent(txn, localPersonId, modality);
+  } on ConsentDeniedException {
+    rethrow;
+  } catch (e) {
+    throw ConsentDeniedException(modality, ConsentDenialReason.unavailable, cause: e);
+  }
+}
+
+/// Append-only consent history over the `consent_events` table.
+class SqliteConsentRepository implements ConsentRepository {
   final DatabaseExecutor _db;
-  SqliteConsentHistoryReader(this._db);
+  final UtcClock _now;
+
+  SqliteConsentRepository(this._db, {UtcClock? clock}) : _now = clock ?? _systemUtc;
+
+  static ConsentEvent _fromRow(Map<String, Object?> r) => ConsentEvent(
+        id: r['id'] as int,
+        localPersonId: r['local_person_id'] as String,
+        modality: r['modality'] as String,
+        enabled: r['enabled'] == 1,
+        changedAtUtc: parseUtc(r['changed_at_utc'] as String),
+      );
+
+  /// The event with the highest id for this person and modality, or null.
+  static Future<ConsentEvent?> latestEvent(DatabaseExecutor db, String localPersonId, String modality) async {
+    final rows = await db.query('consent_events',
+        where: 'local_person_id = ? AND modality = ?',
+        whereArgs: [localPersonId, modality],
+        orderBy: 'id DESC',
+        limit: 1);
+    return rows.isEmpty ? null : _fromRow(rows.first);
+  }
 
   @override
-  Future<Map<String, bool>> currentPreferences(String localPersonId) async {
-    final result = {for (final m in kModalityCodes) m: false};
+  Future<ConsentEvent> recordChange(String localPersonId, String modality, bool enabled) {
+    validateModality(modality);
+    return _inTransaction(_db, (txn) async {
+      final profile = await txn.query('local_profile',
+          columns: ['local_person_id'], where: 'local_person_id = ?', whereArgs: [localPersonId], limit: 1);
+      if (profile.isEmpty) throw DataValidationException('local_person_id', 'no such local profile');
+      final at = _now().toUtc();
+      final id = await txn.insert('consent_events', {
+        'local_person_id': localPersonId,
+        'modality': modality,
+        'enabled': enabled ? 1 : 0,
+        'changed_at_utc': utcIso(at),
+      });
+      return ConsentEvent(id: id, localPersonId: localPersonId, modality: modality, enabled: enabled, changedAtUtc: at);
+    });
+  }
+
+  @override
+  Future<bool> isEnabled(String localPersonId, String modality) async {
+    validateModality(modality);
+    return (await latestEvent(_db, localPersonId, modality))?.enabled ?? false;
+  }
+
+  @override
+  Future<ConsentSnapshot> snapshot(String localPersonId) async {
     final rows = await _db.rawQuery(
-      'SELECT e.modality, e.enabled FROM consent_events e '
+      'SELECT e.* FROM consent_events e '
       'JOIN (SELECT modality, MAX(id) AS last_id FROM consent_events WHERE local_person_id = ? GROUP BY modality) l '
       'ON e.id = l.last_id',
       [localPersonId],
     );
-    for (final r in rows) {
-      result[r['modality'] as String] = r['enabled'] == 1;
-    }
-    return result;
+    return ConsentSnapshot(localPersonId, {for (final r in rows) r['modality'] as String: _fromRow(r)});
+  }
+
+  @override
+  Future<Map<String, bool>> currentPreferences(String localPersonId) async =>
+      (await snapshot(localPersonId)).preferences;
+
+  @override
+  Future<List<ConsentEvent>> history(String localPersonId, {String? modality}) async {
+    if (modality != null) validateModality(modality);
+    final rows = await _db.query('consent_events',
+        where: modality == null ? 'local_person_id = ?' : 'local_person_id = ? AND modality = ?',
+        whereArgs: modality == null ? [localPersonId] : [localPersonId, modality],
+        orderBy: 'id ASC');
+    return rows.map(_fromRow).toList();
   }
 }

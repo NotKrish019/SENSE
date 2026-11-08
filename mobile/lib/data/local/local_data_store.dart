@@ -6,9 +6,11 @@
 // `sqflite_common_ffi` with a disposable file. Chrome has no SQLite plugin in
 // this project and must keep data in memory only (ADR-009 Decision J).
 //
-// NOT ENCRYPTED, NOT USED BY THE APP. Real participant data must not be
-// written until SQLCipher and Android Keystore-backed key management are
-// implemented and verified, and consent gating (Milestone B) is in place.
+// NOT ENCRYPTED, NOT USED BY THE APP. Daily-record writes are gated by the
+// persisted modality preferences (Milestone B), but real participant data
+// must still not be written until SQLCipher and Android Keystore-backed key
+// management are implemented and verified (ADR-009 Decision J). There is no
+// global instance, and no production screen opens this database.
 
 import 'package:sqflite/sqlite_api.dart';
 
@@ -16,6 +18,7 @@ import 'repositories.dart';
 import 'schema.dart';
 import 'sqlite_repositories.dart';
 
+export 'consent.dart';
 export 'records.dart';
 export 'repositories.dart';
 export 'schema.dart' show kSchemaVersion;
@@ -55,7 +58,7 @@ class LocalDataStore {
   final SleepRepository sleep;
   final WorkloadRepository workload;
   final ActivityRepository activity;
-  final ConsentHistoryReader consentHistory;
+  final ConsentRepository consent;
 
   LocalDataStore(this.executor, {UtcClock? clock, IdGenerator? ids})
       : profiles = SqliteLocalProfileRepository(executor, clock: clock, ids: ids),
@@ -63,10 +66,12 @@ class LocalDataStore {
         sleep = SqliteDailyRecordRepository(executor, SleepCodec(), clock: clock, ids: ids),
         workload = SqliteDailyRecordRepository(executor, WorkloadCodec(), clock: clock, ids: ids),
         activity = SqliteDailyRecordRepository(executor, ActivityCodec(), clock: clock, ids: ids),
-        consentHistory = SqliteConsentHistoryReader(executor);
+        consent = SqliteConsentRepository(executor, clock: clock);
 
   /// Runs [action] with repositories bound to one transaction: everything in
-  /// it is committed together or rolled back together.
+  /// it (for example a consent change and a record written under it) is
+  /// committed together or rolled back together. Consent checks inside it
+  /// read the transaction's own state.
   static Future<R> transaction<R>(
     Database db,
     Future<R> Function(LocalDataStore store) action, {
