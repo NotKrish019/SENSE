@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
+
 import '../../core/state/consent_preferences.dart';
-import '../widgets/sense_button.dart';
-import '../widgets/sense_card.dart';
-import '../widgets/sense_navigation.dart';
+import '../../core/theme/nature_tokens.dart';
+import '../nature/arrival_art.dart';
+import '../nature/nature_widgets.dart';
+import '../widgets/sense_tappable.dart';
 import 'main_shell.dart';
 
 /// Data & consent preferences for the six optional inputs (M1–M6).
 ///
-/// Shown after onboarding (Splash → Onboarding → Consent → Dashboard) and from
-/// Settings ("Review data and consent preferences").
+/// Shown after onboarding (Splash → Onboarding → Consent → Home) and from
+/// Profile & settings ("Review data and consent preferences").
 ///
-/// Prototype honesty rules: choices are held in memory only (see
-/// [ConsentPreferences]); they do not start any data collection, no OS
-/// permission is requested, and this is not a research-participant consent
-/// process.
-class ConsentScreen extends StatelessWidget {
+/// Living Landscapes (Phase 5): presentation only. The preference model
+/// ([ConsentPreferences]: identifiers M1–M6, all off by default, in memory
+/// only), the wording of every choice, and the completion behaviour are
+/// unchanged: "Continue to SENSE" opens Home as the only route; in settings
+/// mode "Done" returns to Profile.
+///
+/// Prototype honesty rules: choices are held in memory only; they do not
+/// start any data collection, no OS permission is requested, and this is not
+/// a research-participant consent process.
+class ConsentScreen extends StatefulWidget {
   /// True when opened from Settings: the action returns to Settings instead
   /// of entering the dashboard.
   final bool isSettingsMode;
@@ -23,63 +29,80 @@ class ConsentScreen extends StatelessWidget {
   const ConsentScreen({super.key, this.isSettingsMode = false});
 
   @override
+  State<ConsentScreen> createState() => _ConsentScreenState();
+}
+
+class _ConsentScreenState extends State<ConsentScreen> {
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final prefs = ConsentPreferences.instance;
-    return Scaffold(
-      backgroundColor: SenseColors.background,
-      appBar: const SenseAppBar(title: 'Data & consent preferences'),
-      body: SafeArea(
-        child: ListenableBuilder(
-          listenable: prefs,
-          builder: (context, _) => ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: SenseSpacing.screenHorizontal,
-              vertical: 12,
-            ),
-            children: [
-              Text(
-                'Choose what you would like to share',
-                style: SenseTypography.h2.copyWith(color: SenseColors.navy900),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'All six inputs are optional and off by default. You can continue '
-                'with none of them turned on, and skipping an input will never be '
-                'treated as a sign of stress.',
-                style: SenseTypography.bodySecondary.copyWith(height: 1.45),
-              ),
-              const SizedBox(height: 16),
-              const _PrototypeNotice(),
-              const SizedBox(height: 20),
-              for (final m in InputModality.values) ...[
-                _ModalityCard(
-                  modality: m,
-                  info: _modalityInfo[m]!,
-                  value: prefs.isEnabled(m),
-                  onChanged: (v) => prefs.setEnabled(m, v),
+    final settings = widget.isSettingsMode;
+    return Theme(
+      data: NatureTheme.light,
+      child: Scaffold(
+        backgroundColor: NatureColors.background,
+        body: NatureJournalPage(
+          controller: _scroll,
+          onBack: () => Navigator.of(context).maybePop(),
+          backLabel: 'Back',
+          maxSheetWidth: 760,
+          band: (desktop) => GateBand(tornBottom: desktop),
+          child: ListenableBuilder(
+            listenable: prefs,
+            builder: (context, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(settings ? 'Profile · data & consent' : 'Data & consent preferences',
+                    style: NatureType.eyebrow),
+                const SizedBox(height: 8),
+                const NatureHeading('Choose what you would like to share'),
+                const SizedBox(height: 8),
+                const Text(
+                  'All six inputs are optional and off by default. You can continue '
+                  'with none of them turned on, and skipping an input will never be '
+                  'treated as a sign of stress.',
+                  style: NatureType.bodyMuted,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 18),
+                const _PrototypeNotice(),
+                const SizedBox(height: 26),
+                for (final m in InputModality.values) ...[
+                  _ConsentChoice(
+                    modality: m,
+                    info: _modalityInfo[m]!,
+                    value: prefs.isEnabled(m),
+                    onChanged: (v) => prefs.setEnabled(m, v),
+                  ),
+                  if (m != InputModality.values.last)
+                    const Divider(height: 1, thickness: 1, color: NatureColors.divider),
+                ],
+                const SizedBox(height: 22),
+                const _SupportNote(),
+                const SizedBox(height: 22),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    '${prefs.enabledCount} of ${InputModality.values.length} inputs turned on '
+                    '(kept only while the app is open).',
+                    style: NatureType.label.copyWith(color: NatureColors.ink),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                NaturePrintedAction(
+                  label: settings ? 'Done' : 'Continue to SENSE',
+                  icon: settings ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                  onTap: () => _onContinue(context),
+                ),
               ],
-              const SizedBox(height: 4),
-              _SupportNote(),
-              const SizedBox(height: 20),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  '${prefs.enabledCount} of ${InputModality.values.length} inputs turned on '
-                  '(kept only while the app is open).',
-                  style: SenseTypography.captionMedium.copyWith(color: SenseColors.textSecondary),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 12),
-              SenseButton(
-                label: isSettingsMode ? 'Done' : 'Continue to SENSE',
-                icon: isSettingsMode ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                onPressed: () => _onContinue(context),
-              ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
         ),
       ),
@@ -87,7 +110,7 @@ class ConsentScreen extends StatelessWidget {
   }
 
   void _onContinue(BuildContext context) {
-    if (isSettingsMode) {
+    if (widget.isSettingsMode) {
       Navigator.of(context).pop();
       return;
     }
@@ -166,13 +189,17 @@ const Map<InputModality, _ModalityInfo> _modalityInfo = {
   ),
 };
 
-class _ModalityCard extends StatelessWidget {
+/// One consent choice: the whole header row is a single toggle (announced
+/// with its on/off state), followed by what the input involves, why it may be
+/// useful and what it does in this prototype. The state is shown in words
+/// ("On" / "Off") as well as by the switch.
+class _ConsentChoice extends StatelessWidget {
   final InputModality modality;
   final _ModalityInfo info;
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  const _ModalityCard({
+  const _ConsentChoice({
     required this.modality,
     required this.info,
     required this.value,
@@ -182,62 +209,55 @@ class _ModalityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final available = modality.isAvailableInPrototype;
-    return SenseCard(
-      padding: const EdgeInsets.fromLTRB(16, 6, 8, 14),
+    final title = '${modality.code} · ${modality.title}';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Whole row is the switch's tap target and accessible label.
-          // Transparent Material so the tile's ink renders on the card.
-          Material(
-            type: MaterialType.transparency,
-            child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: SenseColors.white,
-            activeTrackColor: SenseColors.blue600,
-            // Off state must stay visible on a white card (>= 3:1 contrast).
-            inactiveThumbColor: SenseColors.textMuted,
-            inactiveTrackColor: SenseColors.white,
-            trackOutlineColor: WidgetStateProperty.resolveWith(
-              (states) => states.contains(WidgetState.selected)
-                  ? SenseColors.blue600
-                  : SenseColors.textMuted,
-            ),
-            title: Text(
-              '${modality.code} · ${modality.title}',
-              style: SenseTypography.labelBold.copyWith(
-                color: SenseColors.navy900,
-                fontSize: 15,
-              ),
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    available ? Icons.touch_app_outlined : Icons.hourglass_empty_rounded,
-                    size: 14,
-                    color: SenseColors.blue800,
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      '${info.statusLabel} · ${value ? 'On' : 'Off'}',
-                      style: SenseTypography.caption.copyWith(
-                        color: SenseColors.blue800,
-                        fontWeight: FontWeight.w600,
+          SenseTappable(
+            semanticLabel: '$title. ${info.statusLabel}',
+            toggled: value,
+            onTap: () => onChanged(!value),
+            focusColor: NatureColors.focus,
+            hoverColor: NatureColors.hover,
+            borderRadius: NatureRadii.smBorder,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: NatureType.label.copyWith(fontWeight: FontWeight.w600, fontSize: 16)),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _StatusTag(label: info.statusLabel, available: available),
+                              Text(value ? 'On' : 'Off',
+                                  style: NatureType.label.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: value ? NatureColors.forest : NatureColors.inkMuted)),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    _PrintedSwitch(on: value),
+                  ],
+                ),
               ),
             ),
           ),
-          ),
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -256,70 +276,125 @@ class _ModalityCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: '$heading: ',
-              style: SenseTypography.caption.copyWith(
-                color: SenseColors.navy900,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            TextSpan(
-              text: body,
-              style: SenseTypography.caption.copyWith(color: SenseColors.textSecondary),
-            ),
-          ],
-        ),
-        style: const TextStyle(height: 1.4),
+        TextSpan(children: [
+          TextSpan(text: '$heading: ', style: NatureType.label.copyWith(fontSize: 14, fontWeight: FontWeight.w600)),
+          TextSpan(text: body, style: NatureType.bodyMuted),
+        ]),
       ),
     );
   }
 }
 
+/// The availability of an input, in words, on a quiet tag.
+class _StatusTag extends StatelessWidget {
+  final String label;
+  final bool available;
+  const _StatusTag({required this.label, required this.available});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: available ? NatureColors.sageWash : NatureColors.paper,
+        borderRadius: NatureRadii.smBorder,
+        border: Border.all(color: available ? NatureColors.forest : NatureColors.ochreInk),
+      ),
+      child: Text(label,
+          style: NatureType.eyebrow.copyWith(
+              fontSize: 12, color: available ? NatureColors.forest : NatureColors.ochreInk)),
+    );
+  }
+}
+
+/// A printed switch: a paper track with an outlined knob. On: forest track,
+/// knob to the right and a check mark; off: outlined track, knob to the left.
+/// The knob moves instantly with reduced motion. Decorative: the row it sits
+/// in is the toggle and carries the state.
+class _PrintedSwitch extends StatelessWidget {
+  final bool on;
+  const _PrintedSwitch({required this.on});
+
+  @override
+  Widget build(BuildContext context) {
+    final still = MediaQuery.of(context).disableAnimations;
+    return ExcludeSemantics(
+      child: AnimatedContainer(
+        duration: still ? Duration.zero : NatureMotion.selection,
+        curve: NatureMotion.ease,
+        width: 52,
+        height: 30,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: on ? NatureColors.forest : NatureColors.paper,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: on ? NatureColors.forest : NatureColors.borderStrong, width: 1.5),
+        ),
+        child: AnimatedAlign(
+          duration: still ? Duration.zero : NatureMotion.selection,
+          curve: NatureMotion.ease,
+          alignment: on ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 21,
+            height: 21,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: on ? NatureColors.paper : NatureColors.borderStrong,
+            ),
+            child: on ? const Icon(Icons.check_rounded, size: 15, color: NatureColors.forest) : null,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// How this screen works in the prototype (wording unchanged).
 class _PrototypeNotice extends StatelessWidget {
   const _PrototypeNotice();
 
   @override
   Widget build(BuildContext context) {
+    const points = [
+      'Your choices are kept only while the app is open. They are not saved and are lost if you '
+          'refresh or close it.',
+      'Turning an input on does not start any data collection, and no phone or browser permission '
+          'is requested.',
+      'This screen demonstrates consent choices. It is not a substitute for an approved '
+          'research-participant consent process.',
+    ];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(SenseSpacing.md),
-      decoration: BoxDecoration(
-        color: SenseColors.white,
-        borderRadius: SenseRadii.mdBorder,
-        border: Border.all(color: SenseColors.cyan500, width: 1.2),
-        boxShadow: SenseShadows.card,
+      padding: const EdgeInsets.only(left: 16),
+      decoration: const BoxDecoration(
+        border: Border(left: BorderSide(color: NatureColors.sunOchre, width: 3)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, color: SenseColors.blue800, size: 20),
-          const SizedBox(width: SenseSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Prototype demonstration',
-                  style: SenseTypography.labelBold.copyWith(color: SenseColors.navy900),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '• Your choices are kept only while the app is open. They are not saved '
-                  'and are lost if you refresh or close it.\n'
-                  '• Turning an input on does not start any data collection, and no phone '
-                  'or browser permission is requested.\n'
-                  '• This screen demonstrates consent choices. It is not a substitute for an '
-                  'approved research-participant consent process.',
-                  style: SenseTypography.caption.copyWith(
-                    color: SenseColors.textSecondary,
-                    height: 1.45,
+          Text('Prototype demonstration', style: NatureType.eyebrow.copyWith(color: NatureColors.ochreInk)),
+          const SizedBox(height: 6),
+          for (final p in points)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 9, right: 10),
+                    child: ExcludeSemantics(
+                      child: SizedBox(
+                        width: 5,
+                        height: 5,
+                        child: DecoratedBox(
+                            decoration: BoxDecoration(color: NatureColors.ochreInk, shape: BoxShape.circle)),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  Expanded(child: Text(p, style: NatureType.body)),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -327,22 +402,24 @@ class _PrototypeNotice extends StatelessWidget {
 }
 
 class _SupportNote extends StatelessWidget {
+  const _SupportNote();
+
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.favorite_border_rounded, color: SenseColors.blue800, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: ExcludeSemantics(child: Icon(Icons.support_rounded, color: NatureColors.coralInk, size: 20)),
+        ),
+        const SizedBox(width: 10),
+        const Expanded(
           child: Text(
             'Whatever you choose here, support contacts (Tele-MANAS 14416, KIRAN '
             '1800-599-0019) stay listed in Settings, and the journal still shows them '
             'if a crisis phrase is typed.',
-            style: SenseTypography.caption.copyWith(
-              color: SenseColors.textSecondary,
-              height: 1.4,
-            ),
+            style: NatureType.bodyMuted,
           ),
         ),
       ],

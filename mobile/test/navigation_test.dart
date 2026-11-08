@@ -166,7 +166,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ConsentScreen), findsOneWidget);
 
-    await tester.tap(find.text('M1 · Structured check-ins'));
+    // Phase 5: the consent page opens with an illustrated band, so the first
+    // choice may start below the fold; scroll to it like the other choices.
+    final m1 = find.text('M1 · Structured check-ins');
+    await tester.ensureVisible(m1);
+    await tester.pumpAndSettle();
+    await tester.tap(m1);
     await tester.pumpAndSettle();
     final done = find.text('Done');
     await tester.scrollUntilVisible(done, 250,
