@@ -16,6 +16,10 @@ enum SenseLogoVariant {
 
   /// One colour throughout ([SenseLogoMark.color], default Navy).
   mono,
+
+  /// Living Landscapes badge (approved identity, matches the app icon):
+  /// deep forest tile, parchment mark, ochre centre node. Same geometry.
+  forestBadge,
 }
 
 /// The SENSE symbol: a geometric "S" made of two signal paths that meet at a
@@ -59,11 +63,15 @@ class SenseLogo extends StatelessWidget {
   final Color wordmarkColor;
   final double fontSize;
 
+  /// Badge style; [SenseLogoVariant.forestBadge] on redesigned screens.
+  final SenseLogoVariant variant;
+
   const SenseLogo({
     super.key,
     this.markSize = 36,
     this.wordmarkColor = SenseColors.navy900,
     this.fontSize = 16,
+    this.variant = SenseLogoVariant.badge,
   });
 
   @override
@@ -71,7 +79,7 @@ class SenseLogo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SenseLogoMark(size: markSize),
+        SenseLogoMark(size: markSize, variant: variant),
         SizedBox(width: markSize * 0.28),
         Flexible(
           child: Text(
@@ -106,6 +114,12 @@ const double _badgeRadius = 22;
 
 /// Gradient midpoint of the badge tile, used for the centre-node ring.
 const Color _badgeRingColor = SenseColors.blue700;
+
+// Living Landscapes badge colours (same values as the app icon in
+// tool/generate_brand_assets.py: FOREST, PARCHMENT, OCHRE).
+const Color _forest = Color(0xFF3F6556);
+const Color _parchment = Color(0xFFF3EBDD);
+const Color _ochre = Color(0xFFE5AE56);
 
 class _SenseMarkPainter extends CustomPainter {
   final SenseLogoVariant variant;
@@ -174,6 +188,17 @@ class _SenseMarkPainter extends CustomPainter {
         _paintMark(canvas, SenseColors.white, SenseColors.cyan300, SenseColors.navy900);
       case SenseLogoVariant.mono:
         _paintMark(canvas, monoColor, monoColor, null);
+      case SenseLogoVariant.forestBadge:
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+              const Rect.fromLTWH(0, 0, 100, 100), const Radius.circular(_badgeRadius)),
+          Paint()..color = _forest,
+        );
+        const t = 50 * (1 - _badgeMarkScale);
+        canvas.translate(t, t);
+        canvas.scale(_badgeMarkScale);
+        // The separating ring takes the tile colour, as on the app icon.
+        _paintMark(canvas, _parchment, _ochre, _forest);
     }
     canvas.restore();
   }

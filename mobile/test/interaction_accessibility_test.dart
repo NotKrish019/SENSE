@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mindpulse/core/theme/nature_tokens.dart';
 import 'package:mindpulse/core/state/consent_preferences.dart';
 import 'package:mindpulse/core/theme/app_theme.dart';
 import 'package:mindpulse/presentation/screens/activity_screen.dart';
@@ -46,6 +47,11 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = scale;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    // The production Home landscape animates continuously, so pumpAndSettle can
+    // only settle with reduced motion. Motion is covered by its own tests.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(MaterialApp(theme: AppTheme.lightTheme, home: home));
     await tester.pumpAndSettle();
@@ -203,7 +209,7 @@ void main() {
         await tester.tap(find.byIcon(Icons.arrow_back_rounded).last);
         await tester.pumpAndSettle();
         expect(find.byType(CheckInScreen), findsNothing);
-        expect(find.text('Longitudinal Insights'), findsOneWidget);
+        expect(find.text('Longitudinal insights'), findsOneWidget);
         final handle = tester.ensureSemantics();
         expect(tester.getSemantics(find.bySemanticsLabel('Insights tab')),
             isSemantics(isSelected: true));
@@ -277,7 +283,9 @@ void main() {
       expect(firstNav, greaterThan(0), reason: order.join(' > '));
       expect(order.sublist(firstNav), nav, reason: order.join(' > '));
       expect(order.sublist(0, firstNav).any(nav.contains), isFalse, reason: order.join(' > '));
-      expect(order, containsAllInOrder(['Check-in', 'Journal', 'Sleep', 'Workload', 'Voice', 'Activity']));
+      // Input rows are named "Sleep. Duration, timing and rest" and so on.
+      expect(order.map((o) => o.split('. ').first),
+          containsAllInOrder(['Check-in', 'Journal', 'Sleep', 'Workload', 'Voice', 'Activity']));
     });
   });
 
@@ -293,7 +301,9 @@ void main() {
       final ring = tester.widget<Container>(rings.at(i));
       final deco = ring.foregroundDecoration as BoxDecoration?;
       expect(deco, isNotNull, reason: 'ring $i not shown');
-      expect((deco!.border as Border).top.color, SenseTappable.focusRingColor);
+      // Home is redesigned (Phase 1): its controls use the Living Landscapes
+      // ink ring (10:1 on parchment) instead of the blue one.
+      expect((deco!.border as Border).top.color, NatureColors.focus);
       expect((deco.border as Border).top.width, greaterThanOrEqualTo(2.0));
     }
   });
@@ -305,7 +315,7 @@ void main() {
       await pump(tester, const MainShell());
       tester.semantics.tap(find.semantics.byLabel('Insights tab'));
       await tester.pumpAndSettle();
-      expect(find.text('Longitudinal Insights'), findsOneWidget);
+      expect(find.text('Longitudinal insights'), findsOneWidget);
       expect(tester.getSemantics(find.bySemanticsLabel('Insights tab')),
           isSemantics(isSelected: true, isButton: true));
       tester.semantics.tap(find.semantics.byLabel('Profile tab'));
@@ -314,18 +324,18 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('Home input tile and hero card activate with the semantics tap action',
+    testWidgets('Home input row and "About your insights" activate with the semantics tap action',
         (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, const MainShell());
-      tester.semantics.tap(find.semantics.byLabel('Sleep'));
+      tester.semantics.tap(find.semantics.byLabel(RegExp(r'^Sleep\. ')));
       await tester.pumpAndSettle();
       expect(find.byType(SleepScreen), findsOneWidget);
       await tester.tap(find.byIcon(Icons.arrow_back_rounded).last);
       await tester.pumpAndSettle();
-      tester.semantics.tap(find.semantics.byLabel(RegExp('^Current Stress Pattern')));
+      tester.semantics.tap(find.semantics.byLabel('About your insights'));
       await tester.pumpAndSettle();
-      expect(find.text('Longitudinal Insights'), findsOneWidget);
+      expect(find.text('Longitudinal insights'), findsOneWidget);
       handle.dispose();
     });
 
@@ -391,13 +401,15 @@ void main() {
     await tester.runAsync(loadPoppins);
     final handle = tester.ensureSemantics();
     await pump(tester, const CheckInScreen(), height: 3000);
-    await tester.tap(find.text('Continue to Stress Rating'));
+    await tester.tap(find.text('Continue to stress rating'));
     await tester.pumpAndSettle();
-    expect(find.text('Step 2 of 2'), findsOneWidget);
+    expect(find.text('Daily check-in · Step 2 of 2'), findsOneWidget);
     expect(semanticsProblems(tester), isEmpty);
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-    final d = tester.getSemantics(find.bySemanticsLabel('Perceived stress')).getSemanticsData();
+    // "Perceived stress" is also the step heading; read the slider's own node.
+    final d = tester.getSemantics(find.byType(Slider)).getSemanticsData();
+    expect(d.label, 'Perceived stress');
     expect(d.hasAction(SemanticsAction.increase) || d.hasAction(SemanticsAction.decrease), isTrue);
     expect(d.value, matches(RegExp(r'^\d of 5$')));
     handle.dispose();

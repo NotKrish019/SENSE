@@ -36,6 +36,12 @@ ELECTRIC = '#059BE0'
 SOFT_CYAN = '#58E2F9'
 WHITE = '#FFFFFF'
 
+# Living Landscapes app-icon palette (Phase 1, approved): deep forest tile,
+# parchment mark, restrained ochre centre node. Same mark geometry.
+FOREST = '#3F6556'
+PARCHMENT = '#F3EBDD'
+OCHRE = '#E5AE56'
+
 # ---- Mark geometry, in a 100 x 100 box ---------------------------------------
 R = 15.5            # radius of both signal arcs
 C1 = (50.0, 34.5)   # upper arc centre
@@ -83,18 +89,26 @@ def svg(body, w=100, h=100, defs=''):
             + (f'<defs>{defs}</defs>\n' if defs else '') + body + '\n</svg>\n')
 
 
-def badge_body(mark_scale=0.84, radius=22.0, full_bleed=False):
-    """Rounded-square app badge: gradient tile, white mark, cyan centre node."""
+def badge_body(mark_scale=0.84, radius=22.0, full_bleed=False, forest=False):
+    """Rounded-square app badge.
+
+    Default: gradient tile, white mark, cyan centre node (the original badge,
+    still used by the horizontal lockup). `forest=True`: the Living
+    Landscapes app icon - deep forest tile, parchment mark, ochre centre."""
     t = 50 * (1 - mark_scale)
-    tile = ('<rect width="100" height="100" fill="url(#g)"/>' if full_bleed else
-            f'<rect width="100" height="100" rx="{radius}" fill="url(#g)"/>')
+    fill = FOREST if forest else 'url(#g)'
+    tile = (f'<rect width="100" height="100" fill="{fill}"/>' if full_bleed else
+            f'<rect width="100" height="100" rx="{radius}" fill="{fill}"/>')
+    transform = f'translate({t:.2f} {t:.2f}) scale({mark_scale})'
+    if forest:
+        # The separating ring takes the tile colour, as on the original badge.
+        return tile + '\n' + mark_elements(PARCHMENT, OCHRE, gap_colour=FOREST, transform=transform)
     # The separating ring takes the tile colour at the centre (gradient midpoint).
-    return tile + '\n' + mark_elements(WHITE, SOFT_CYAN, gap_colour='#047CB3',
-                                      transform=f'translate({t:.2f} {t:.2f}) scale({mark_scale})')
+    return tile + '\n' + mark_elements(WHITE, SOFT_CYAN, gap_colour='#047CB3', transform=transform)
 
 
-def badge(**kw):
-    return svg(badge_body(**kw), defs=GRADIENT)
+def badge(forest=False, **kw):
+    return svg(badge_body(forest=forest, **kw), defs='' if forest else GRADIENT)
 
 
 # ---- Wordmark: "SENSE" in Poppins SemiBold, outlined -------------------------
@@ -143,15 +157,20 @@ def write_svgs():
         'sense_mark_mono.svg': svg(mark_elements(NAVY, NAVY)),
         # Symbol for dark backgrounds.
         'sense_mark_white.svg': svg(mark_elements(WHITE, SOFT_CYAN, gap_colour=NAVY)),
-        # App icon / badge (rounded square).
-        'sense_app_icon.svg': badge(),
+        # App icon / badge (rounded square), Living Landscapes palette.
+        'sense_app_icon.svg': badge(forest=True),
         # Maskable icon: full-bleed tile, mark kept inside the 80 % safe zone.
-        'sense_app_icon_maskable.svg': badge(mark_scale=0.72, full_bleed=True),
+        'sense_app_icon_maskable.svg': badge(forest=True, mark_scale=0.72, full_bleed=True),
         # Primary horizontal lockup: badge + SENSE wordmark (Poppins SemiBold,
         # outlined to paths so it does not depend on an installed font).
         'sense_logo_horizontal.svg': svg(
             '<title>SENSE</title>\n' + badge_body() + '\n' + wordmark_paths(NAVY),
             w=330, h=100, defs=GRADIENT),
+        # The same lockup in the Living Landscapes identity (forest badge,
+        # forest wordmark) for the redesigned app and its documents.
+        'sense_logo_horizontal_forest.svg': svg(
+            '<title>SENSE</title>\n' + badge_body(forest=True) + '\n' + wordmark_paths(FOREST),
+            w=330, h=100),
     }
     for name, content in files.items():
         with open(os.path.join(BRAND, name), 'w') as f:

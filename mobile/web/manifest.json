@@ -3,9 +3,9 @@
     "short_name": "SENSE",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#E6F6FF",
-    "theme_color": "#012F5F",
-    "description": "SENSE — non-clinical well-being research prototype.",
+    "background_color": "#F3EBDD",
+    "theme_color": "#3F6556",
+    "description": "SENSE: a non-clinical well-being research prototype.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

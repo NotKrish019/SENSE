@@ -30,6 +30,11 @@ void main() {
     t.platformDispatcher.textScaleFactorTestValue = scale;
     addTearDown(t.view.resetPhysicalSize);
     addTearDown(t.view.resetDevicePixelRatio);
+    // The production Home landscape animates continuously, so pumpAndSettle can
+    // only settle with reduced motion. Motion is covered by its own tests.
+    t.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(t.platformDispatcher.clearAccessibilityFeaturesTestValue);
     addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
     await t.pumpWidget(MaterialApp(theme: AppTheme.lightTheme, home: w));
     await t.pumpAndSettle();
@@ -105,13 +110,18 @@ void main() {
 
   // ---- B. Semantics -----------------------------------------------------------
   group('Interactive semantics', () {
-    testWidgets('Dashboard hero card and example insight card are buttons', (t) async {
+    testWidgets('Home insight link and example observation link are buttons', (t) async {
       final h = t.ensureSemantics();
       await pump(t, DashboardScreen(onOpenInsights: () {}, onOpenProfile: () {}));
-      expect(t.getSemantics(find.textContaining('No pattern yet')),
-          isSemantics(isButton: true));
-      expect(t.getSemantics(find.textContaining('Example observation')),
-          isSemantics(isButton: true));
+      // Phase 1: the status is plain text ("No pattern yet"); its action is the
+      // "About your insights" link. The sample card's action is its link.
+      expect(find.text('No pattern yet'), findsOneWidget);
+      expect(t.getSemantics(find.bySemanticsLabel('About your insights')),
+          isSemantics(isButton: true, hasTapAction: true));
+      await t.scrollUntilVisible(find.text('View example details'), 300,
+          scrollable: find.byType(Scrollable).first);
+      expect(t.getSemantics(find.bySemanticsLabel('View example details')),
+          isSemantics(isButton: true, hasTapAction: true));
       h.dispose();
     });
 
@@ -214,9 +224,9 @@ void main() {
 
     testWidgets('Check-in: completion screen says not saved; no success claim', (t) async {
       await pump(t, const CheckInScreen());
-      await tapVisible(t, find.text('Continue to Stress Rating'));
-      await tapVisible(t, find.text('Save Check-in'));
-      expect(find.text('Check-in complete — not saved'), findsOneWidget);
+      await tapVisible(t, find.text('Continue to stress rating'));
+      await tapVisible(t, find.text('Finish check-in'));
+      expect(find.text('Check-in complete, not saved'), findsOneWidget);
       expect(find.textContaining('your answers are not saved'), findsOneWidget);
       expect(misleadingText(), findsNothing);
     });

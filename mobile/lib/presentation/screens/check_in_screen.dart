@@ -1,370 +1,264 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../widgets/sense_tappable.dart';
-import '../widgets/sense_button.dart';
-import '../widgets/sense_card.dart';
-import '../widgets/sense_navigation.dart';
-import '../widgets/sense_inputs.dart';
 
+import '../../core/theme/nature_tokens.dart';
+import '../nature/mood_scale.dart';
+import '../nature/nature_widgets.dart';
+
+/// Production daily check-in (Living Landscapes, Phase 1).
+///
+/// * Step 1: mood (1 to 5, default 3) shown as the five approved mood
+///   symbols, and motivation or energy (1 to 5, default 3); then "Continue to
+///   stress rating".
+/// * Step 2: perceived stress (1 to 5, default 2), the planned-processing
+///   notice, Back (to step 1, answers kept) and "Finish check-in".
+/// * Finishing shows an honest "not saved" page. Nothing is stored, no
+///   baseline is updated and no model runs: persistence is not connected.
+///
+/// Screen-reader names: "Mood: Very Low" … "Mood: Great" (with selected
+/// state), "Motivation or energy level" and "Perceived stress", values read as
+/// "n of 5". The mood symbols themselves are decorative.
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
 
+  /// The mood scale: values, order and labels. This is the production mood
+  /// model; the emoji it used before Phase 1 were presentation only.
+  static const List<({int value, String label})> moodOptions = [
+    (value: 1, label: 'Very Low'),
+    (value: 2, label: 'Low'),
+    (value: 3, label: 'Neutral'),
+    (value: 4, label: 'Good'),
+    (value: 5, label: 'Great'),
+  ];
+
   @override
-  State<CheckInScreen> createState() => _CheckInScreenState();
+  State<CheckInScreen> createState() => CheckInScreenState();
 }
 
-class _CheckInScreenState extends State<CheckInScreen> {
+class CheckInScreenState extends State<CheckInScreen> {
   int _currentStep = 1;
   int _selectedMood = 3; // 1 to 5
   int _perceivedStress = 2; // 1 to 5
   int _motivationLevel = 3; // 1 to 5
   bool _isSaved = false;
+  final ScrollController _scroll = ScrollController();
 
-  final List<Map<String, dynamic>> _moodOptions = [
-    {'val': 1, 'icon': '😔', 'label': 'Very Low'},
-    {'val': 2, 'icon': '🙁', 'label': 'Low'},
-    {'val': 3, 'icon': '😐', 'label': 'Neutral'},
-    {'val': 4, 'icon': '🙂', 'label': 'Good'},
-    {'val': 5, 'icon': '😄', 'label': 'Great'},
-  ];
+  /// Read-only view of the state, for tests.
+  int get selectedMood => _selectedMood;
+  int get currentStep => _currentStep;
+  int get motivationLevel => _motivationLevel;
+  int get perceivedStress => _perceivedStress;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _goTo(VoidCallback change) {
+    setState(change);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final Widget content;
+    final String key;
     if (_isSaved) {
-      return Scaffold(
-        backgroundColor: SenseColors.background,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFE6F6FF),
-                  ),
-                  child: const Icon(
-                    Icons.info_outline_rounded,
-                    color: SenseColors.blue800,
-                    size: 48,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Check-in complete — not saved',
-                  style: SenseTypography.h2.copyWith(color: SenseColors.navy900),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Thank you for trying the check-in. In this prototype your answers '
-                  'are not saved and no personal baseline is updated.',
-                  style: SenseTypography.body.copyWith(
-                    color: SenseColors.textSecondary,
-                    height: 1.45,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                SenseButton(
-                  label: 'Return to Dashboard',
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-          ),
-        ),
+      key = 'done';
+      content = _DoneStep(onReturn: () => Navigator.of(context).maybePop());
+    } else if (_currentStep == 1) {
+      key = 'step1';
+      content = _MoodStep(
+        mood: _selectedMood,
+        motivation: _motivationLevel,
+        onMood: (v) => setState(() => _selectedMood = v),
+        onMotivation: (v) => setState(() => _motivationLevel = v),
+        onContinue: () => _goTo(() => _currentStep = 2),
+      );
+    } else {
+      key = 'step2';
+      content = _StressStep(
+        stress: _perceivedStress,
+        onStress: (v) => setState(() => _perceivedStress = v),
+        onBack: () => _goTo(() => _currentStep = 1),
+        // No persistence yet: go straight to the honest "not saved" state
+        // instead of simulating a saving delay.
+        onFinish: () => _goTo(() => _isSaved = true),
       );
     }
 
-    return Scaffold(
-      backgroundColor: SenseColors.background,
-      appBar: SenseAppBar(
-        title: 'Daily Check-in',
-        actions: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            alignment: Alignment.center,
-            child: Text(
-              'Step $_currentStep of 2',
-              style: SenseTypography.captionMedium.copyWith(
-                color: SenseColors.blue800,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: SenseSpacing.screenHorizontal,
-            vertical: 12.0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Progress Bar
-              Container(
-                height: 6,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6EFFC),
-                  borderRadius: SenseRadii.pillBorder,
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: _currentStep == 1 ? 0.5 : 1.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: SenseColors.primaryActionGradient,
-                      borderRadius: SenseRadii.pillBorder,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              if (_currentStep == 1) ...[
-                Text(
-                  'How are you feeling right now?',
-                  style: SenseTypography.h2.copyWith(color: SenseColors.navy900),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Select the state that best represents your current mood valence.',
-                  style: SenseTypography.bodySecondary,
-                ),
-                const SizedBox(height: 20),
-
-                // Mood Selection Grid (Emoticons + text labels): options are sized
-                // from the available width — 5 per row normally, 3 per row
-                // (wrapping) on narrow screens or with large text, and 2 per row
-                // if the widest label (bold, as when selected) would otherwise
-                // be broken mid-word.
-                LayoutBuilder(builder: (context, constraints) {
-                  const gap = 8.0;
-                  final textScaler = MediaQuery.textScalerOf(context);
-                  final scale = textScaler.scale(1.0);
-                  double widestLabel = 0;
-                  for (final opt in _moodOptions) {
-                    final tp = TextPainter(
-                      text: TextSpan(
-                        text: opt['label'] as String,
-                        style: SenseTypography.caption
-                            .copyWith(fontWeight: FontWeight.w700, fontSize: 11),
-                      ),
-                      textDirection: TextDirection.ltr,
-                      textScaler: textScaler,
-                      maxLines: 1,
-                    )..layout();
-                    if (tp.width > widestLabel) widestLabel = tp.width;
-                    tp.dispose();
-                  }
-                  double widthFor(int n) =>
-                      ((constraints.maxWidth - gap * (n - 1)) / n).floorToDouble();
-                  var perRow = (constraints.maxWidth < 330 || scale >= 1.3) ? 3 : 5;
-                  while (perRow > 2 && widestLabel + 4 > widthFor(perRow)) {
-                    perRow = perRow == 5 ? 3 : 2;
-                  }
-                  final itemWidth = widthFor(perRow);
-                  return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: _moodOptions.map((opt) {
-                    final isSelected = (_selectedMood == opt['val']);
-                    return SenseTappable(
-                      semanticLabel: 'Mood: ${opt['label']}',
-                      selected: isSelected,
-                      onTap: () => setState(() => _selectedMood = opt['val'] as int),
-                      borderRadius: SenseRadii.mdBorder,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: itemWidth,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          color: isSelected ? SenseColors.navy900 : SenseColors.white,
-                          borderRadius: SenseRadii.mdBorder,
-                          border: Border.all(
-                            color: isSelected ? SenseColors.navy900 : SenseColors.border,
-                            width: 1.5,
-                          ),
-                          boxShadow: isSelected ? SenseShadows.recessed : SenseShadows.card,
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              opt['icon'] as String,
-                              style: const TextStyle(fontSize: 26),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              opt['label'] as String,
-                              textAlign: TextAlign.center,
-                              style: SenseTypography.caption.copyWith(
-                                color: isSelected ? SenseColors.white : SenseColors.textSecondary,
-                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  );
-                }),
-                const SizedBox(height: 32),
-
-                // Motivation Level
-                Text(
-                  'Motivation / Energy Level',
-                  style: SenseTypography.h3.copyWith(color: SenseColors.navy900),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'How energetic or motivated do you feel to complete tasks today?',
-                  style: SenseTypography.bodySecondary,
-                ),
-                const SizedBox(height: 16),
-                SenseCard(
-                  child: Column(
-                    children: [
-                      SenseSliderLabels(
-                        minLabel: 'Low Energy',
-                        valueLabel: 'Rating: $_motivationLevel / 5',
-                        maxLabel: 'High Energy',
-                      ),
-                      MergeSemantics(child: Semantics(
-                        // Name merged into the slider's own node (Task 8): it previously had none.
-                        label: 'Motivation or energy level',
-                        child: Slider(
-                          semanticFormatterCallback: (v) => '${v.round()} of 5',
-                          value: _motivationLevel.toDouble(),
-                          min: 1,
-                          max: 5,
-                          divisions: 4,
-                          activeColor: SenseColors.blue600,
-                          inactiveColor: const Color(0xFFD6EFFC),
-                          onChanged: (v) => setState(() => _motivationLevel = v.round()),
-                        ),
-                      )),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 36),
-
-                SenseButton(
-                  label: 'Continue to Stress Rating',
-                  icon: Icons.arrow_forward_rounded,
-                  onPressed: () => setState(() => _currentStep = 2),
-                ),
-              ] else ...[
-                Text(
-                  'Perceived Stress Level',
-                  style: SenseTypography.h2.copyWith(color: SenseColors.navy900),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Rate your subjective perceived stress today (adapted EMA subscale).',
-                  style: SenseTypography.bodySecondary,
-                ),
-                const SizedBox(height: 20),
-
-                SenseCard(
-                  child: Column(
-                    children: [
-                      SenseSliderLabels(
-                        minLabel: '1 — Relaxed',
-                        valueLabel: 'Score: $_perceivedStress / 5',
-                        maxLabel: '5 — Very Stressed',
-                        valueStyle: SenseTypography.labelBold.copyWith(
-                          color: _perceivedStress >= 4 ? SenseColors.warning : SenseColors.blue800,
-                        ),
-                      ),
-                      MergeSemantics(child: Semantics(
-                        // Name merged into the slider's own node (Task 8): it previously had none.
-                        label: 'Perceived stress',
-                        child: Slider(
-                          semanticFormatterCallback: (v) => '${v.round()} of 5',
-                          value: _perceivedStress.toDouble(),
-                          min: 1,
-                          max: 5,
-                          divisions: 4,
-                          activeColor: _perceivedStress >= 4
-                              ? SenseColors.warning
-                              : SenseColors.blue600,
-                          inactiveColor: const Color(0xFFD6EFFC),
-                          onChanged: (v) => setState(() => _perceivedStress = v.round()),
-                        ),
-                      )),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Non-clinical observation notice
-                SenseCard(
-                  color: SenseColors.surface,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.info_outline_rounded,
-                        color: SenseColors.blue800,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Planned: once saving is connected, your ratings will be compared '
-                          'with your own history, and single unusual days will be smoothed out '
-                          'before any pattern is shown. This is not active yet — ratings are '
-                          'not saved in this prototype.',
-                          style: SenseTypography.caption.copyWith(
-                            color: SenseColors.textSecondary,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 36),
-
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: SenseButton(
-                        label: 'Back',
-                        variant: SenseButtonVariant.secondary,
-                        onPressed: () => setState(() => _currentStep = 1),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: SenseButton(
-                        label: 'Save Check-in',
-                        onPressed: _handleSave,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+    return Theme(
+      data: NatureTheme.light,
+      child: Scaffold(
+        backgroundColor: NatureColors.background,
+        body: NatureJournalPage(
+          controller: _scroll,
+          onBack: () => Navigator.of(context).maybePop(),
+          child: AnimatedSwitcher(
+            duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 220),
+            switchInCurve: NatureMotion.ease,
+            switchOutCurve: NatureMotion.ease,
+            layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topLeft, children: [...previous, if (current != null) current]),
+            child: KeyedSubtree(key: ValueKey(key), child: content),
           ),
         ),
       ),
     );
   }
+}
 
-  void _handleSave() {
-    // No persistence yet: go straight to the honest "not saved" state instead
-    // of simulating a saving delay.
-    setState(() => _isSaved = true);
+// ---- Step 1: mood, motivation ---------------------------------------------------
+class _MoodStep extends StatelessWidget {
+  final int mood;
+  final int motivation;
+  final ValueChanged<int> onMood;
+  final ValueChanged<int> onMotivation;
+  final VoidCallback onContinue;
+  const _MoodStep({
+    required this.mood,
+    required this.motivation,
+    required this.onMood,
+    required this.onMotivation,
+    required this.onContinue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const NatureStepHeader(step: 1),
+        const SizedBox(height: 10),
+        const NatureHeading('How are you feeling right now?'),
+        const SizedBox(height: 8),
+        const Text(
+          'This check-in is optional. Choose the one that feels closest; '
+          'there is no right answer, and you can leave at any time.',
+          style: NatureType.bodyMuted,
+        ),
+        const SizedBox(height: 22),
+        MoodScale(options: CheckInScreen.moodOptions, selected: mood, onSelected: onMood),
+        const SizedBox(height: 26),
+        const SprigRule(),
+        const SizedBox(height: 22),
+        const Text('Motivation and energy', style: NatureType.sectionTitle),
+        const SizedBox(height: 4),
+        const Text('How energetic or motivated do you feel to complete tasks today?',
+            style: NatureType.bodyMuted),
+        const SizedBox(height: 12),
+        NatureSlider(
+          semanticLabel: 'Motivation or energy level',
+          value: motivation,
+          minLabel: 'Low energy',
+          maxLabel: 'High energy',
+          onChanged: onMotivation,
+        ),
+        const SizedBox(height: 30),
+        NaturePrintedAction(label: 'Continue to stress rating', onTap: onContinue),
+        const SizedBox(height: 18),
+        const NatureNotSavedNote(),
+      ],
+    );
+  }
+}
+
+// ---- Step 2: perceived stress ---------------------------------------------------
+class _StressStep extends StatelessWidget {
+  final int stress;
+  final ValueChanged<int> onStress;
+  final VoidCallback onBack;
+  final VoidCallback onFinish;
+  const _StressStep({
+    required this.stress,
+    required this.onStress,
+    required this.onBack,
+    required this.onFinish,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final finish = NaturePrintedAction(label: 'Finish check-in', onTap: onFinish, icon: null);
+    final back = NatureQuietButton(label: 'Back', onTap: onBack);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const NatureStepHeader(step: 2),
+        const SizedBox(height: 10),
+        const NatureHeading('Perceived stress'),
+        const SizedBox(height: 8),
+        const Text('Rate your subjective perceived stress today (adapted EMA subscale).',
+            style: NatureType.bodyMuted),
+        const SizedBox(height: 18),
+        NatureSlider(
+          semanticLabel: 'Perceived stress',
+          value: stress,
+          minLabel: '1 · Relaxed',
+          maxLabel: '5 · Very stressed',
+          onChanged: onStress,
+          // The higher end (4 and 5) is shown in a warmer colour, as before;
+          // the value text and thumb position carry the meaning.
+          warm: stress >= 4,
+        ),
+        const SizedBox(height: 26),
+        const SprigRule(),
+        const SizedBox(height: 22),
+        const NatureMarginNote(
+          eyebrow: 'Planned, not active yet',
+          text: 'Once saving is connected, your ratings will be compared with your own '
+              'history, and single unusual days will be smoothed out before any pattern '
+              'is shown. This is not active yet. Ratings are not saved in this prototype.',
+        ),
+        const SizedBox(height: 30),
+        LayoutBuilder(builder: (context, c) {
+          final stacked = c.maxWidth < 340 || MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [finish, const SizedBox(height: 10), back],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 2, child: back),
+              const SizedBox(width: 12),
+              Expanded(flex: 3, child: finish),
+            ],
+          );
+        }),
+        const SizedBox(height: 18),
+        const NatureNotSavedNote(),
+      ],
+    );
+  }
+}
+
+// ---- Finished: honest "not saved" page ------------------------------------------
+class _DoneStep extends StatelessWidget {
+  final VoidCallback onReturn;
+  const _DoneStep({required this.onReturn});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Daily check-in', style: NatureType.eyebrow),
+        const SizedBox(height: 10),
+        const NatureHeading('Check-in complete, not saved'),
+        const SizedBox(height: 10),
+        const Text(
+          'Thank you for trying the check-in. In this prototype your answers are not '
+          'saved and no personal baseline is updated.',
+          style: NatureType.body,
+        ),
+        const SizedBox(height: 26),
+        const SprigRule(),
+        const SizedBox(height: 26),
+        NaturePrintedAction(label: 'Return to Home', onTap: onReturn, icon: null),
+      ],
+    );
   }
 }

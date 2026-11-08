@@ -18,6 +18,11 @@ void main() {
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    // The production Home landscape animates continuously, so pumpAndSettle can
+    // only settle with reduced motion. Motion is covered by its own tests.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     await tester.pumpWidget(MaterialApp(theme: AppTheme.lightTheme, home: home));
     await tester.pumpAndSettle();
   }

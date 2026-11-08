@@ -25,6 +25,11 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = scale;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    // The production Home landscape animates continuously, so pumpAndSettle can
+    // only settle with reduced motion. Motion is covered by its own tests.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(MaterialApp(theme: AppTheme.lightTheme, home: home));
   }
@@ -161,15 +166,16 @@ void main() {
     }
 
     // Insights weekday labels, measured with real Poppins (Task 7B).
-    // Expected: three letters whenever every label fits its 1/7 slot
-    // (412 px side by side; 360 and 320 px, where the charts stack
-    // full-width), single letters when they do not (2x text).
+    // Expected: three letters whenever every label fits its 1/7 slot,
+    // single letters when they do not (2x text). Phase 2: on phones the bar
+    // chart is full width (it sits beside the rest rating only from 520 px of
+    // content), so 412 px at 1.15x now has room for three letters.
     const threeLetter = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     for (final (width, scale, expectFull) in [
       (412.0, 1.0, true),
       (360.0, 1.0, true),
       (360.0, 1.3, true),
-      (412.0, 1.15, false),
+      (412.0, 1.15, true),
       (320.0, 1.0, true),
       (412.0, 2.0, false),
       (360.0, 2.0, false),

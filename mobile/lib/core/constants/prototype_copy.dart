@@ -10,7 +10,7 @@ class PrototypeCopy {
 
   // ---- Sample / illustrative data -------------------------------------------
   static const String sampleDataLabel = 'Sample data';
-  static const String sampleDataTitle = 'Sample data — not your information';
+  static const String sampleDataTitle = 'Sample data, not your information';
   static const String sampleDataDescription =
       'Illustrative information for demonstration. This is not your recorded '
       'personal data or a clinically validated assessment.';

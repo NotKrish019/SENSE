@@ -9,11 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mindpulse/core/constants/prototype_copy.dart';
 import 'package:mindpulse/core/state/consent_preferences.dart';
 import 'package:mindpulse/core/theme/app_theme.dart';
+import 'package:mindpulse/presentation/redesign/nature_check_in_preview.dart';
 import 'package:mindpulse/presentation/redesign/nature_home_preview.dart';
 import 'package:mindpulse/presentation/redesign/nature_illustrations.dart';
 import 'package:mindpulse/presentation/redesign/nature_tokens.dart';
 import 'package:mindpulse/presentation/screens/activity_screen.dart';
-import 'package:mindpulse/presentation/screens/check_in_screen.dart';
 import 'package:mindpulse/presentation/screens/insight_detail_screen.dart';
 import 'package:mindpulse/presentation/screens/journal_screen.dart';
 import 'package:mindpulse/presentation/screens/sleep_screen.dart';
@@ -124,12 +124,12 @@ void main() {
       await pump(tester, height: 3000);
       await tester.tap(find.bySemanticsLabel("Begin today's check-in"));
       await tester.pumpAndSettle();
-      expect(find.byType(CheckInScreen), findsOneWidget);
+      expect(find.byType(NatureCheckInPreview), findsOneWidget);
       await tester.tap(find.byIcon(Icons.arrow_back_rounded).last);
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('New daily check-in'));
       await tester.pumpAndSettle();
-      expect(find.byType(CheckInScreen), findsOneWidget);
+      expect(find.byType(NatureCheckInPreview), findsOneWidget);
     });
 
     for (final (label, type) in [
@@ -155,7 +155,7 @@ void main() {
       await pump(tester, height: 3000);
       tester.semantics.tap(find.semantics.byLabel('About your insights'));
       await tester.pumpAndSettle();
-      expect(find.text('Longitudinal Insights'), findsOneWidget);
+      expect(find.text('Longitudinal insights'), findsOneWidget);
       expect(tester.getSemantics(find.bySemanticsLabel('Insights tab')),
           isSemantics(isSelected: true, isButton: true));
       tester.semantics.tap(find.semantics.byLabel('Home tab'));
@@ -187,7 +187,7 @@ void main() {
       expect(reached, isTrue);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
-      expect(find.byType(CheckInScreen), findsOneWidget);
+      expect(find.byType(NatureCheckInPreview), findsOneWidget);
     });
   });
 
@@ -308,7 +308,7 @@ void main() {
       for (var i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 500));
       }
-      expect(find.text('Longitudinal Insights'), findsOneWidget);
+      expect(find.text('Longitudinal insights'), findsOneWidget);
       expect(SchedulerBinding.instance.transientCallbackCount, 0,
           reason: 'the Home scene is offstage, so its ticker should be muted');
       await tester.pumpWidget(const SizedBox());
@@ -359,10 +359,10 @@ void main() {
       await pump(tester, width: 1280, height: 900);
       tester.semantics.tap(find.semantics.byLabel('Insights tab'));
       await tester.pumpAndSettle();
-      expect(find.text('Longitudinal Insights'), findsOneWidget);
+      expect(find.text('Longitudinal insights'), findsOneWidget);
       tester.semantics.tap(find.semantics.byLabel('New daily check-in'));
       await tester.pumpAndSettle();
-      expect(find.byType(CheckInScreen), findsOneWidget);
+      expect(find.byType(NatureCheckInPreview), findsOneWidget);
       handle.dispose();
     });
 

@@ -1,24 +1,32 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../widgets/sense_logo.dart';
-import '../../core/constants/prototype_copy.dart';
-import '../widgets/quick_action_tile.dart';
-import '../widgets/stress_summary_card.dart';
-import '../widgets/insight_card.dart';
-import '../widgets/sense_chips.dart';
 
-import 'check_in_screen.dart';
-import 'journal_screen.dart';
-import 'sleep_screen.dart';
-import 'workload_screen.dart';
-import 'voice_screen.dart';
+import '../../core/theme/nature_tokens.dart';
+import '../nature/living_landscape.dart';
+import '../nature/nature_home_sections.dart';
+import '../nature/nature_widgets.dart';
+import '../widgets/sense_tappable.dart';
 import 'activity_screen.dart';
-import 'insights_screen.dart';
-import 'insight_detail_screen.dart';
-import 'settings_screen.dart';
+import 'check_in_screen.dart';
 import 'design_showcase_screen.dart';
+import 'insight_detail_screen.dart';
+import 'insights_screen.dart';
+import 'journal_screen.dart';
+import 'settings_screen.dart';
+import 'sleep_screen.dart';
+import 'voice_screen.dart';
+import 'workload_screen.dart';
 
+/// Production Home (Living Landscapes, Phase 1).
+///
+/// A layered paper-diorama landscape with a journal sheet rising over it:
+/// greeting and date, the primary check-in action, today's honest status, the
+/// six voluntary inputs, a clearly marked sample observation and the support
+/// line. Every action opens its real production screen; Insights and Profile
+/// switch tabs through [MainShell] when it provides [onOpenInsights] and
+/// [onOpenProfile], and are pushed when the screen is used on its own.
+///
+/// No user data, stress score or insight is shown: there is none yet.
 class DashboardScreen extends StatefulWidget {
   /// Provided by MainShell to switch tabs instead of pushing duplicate
   /// Insights/Profile screens. When null (standalone use), screens are pushed.
@@ -27,270 +35,252 @@ class DashboardScreen extends StatefulWidget {
 
   const DashboardScreen({super.key, this.onOpenInsights, this.onOpenProfile});
 
+  /// Accessible name and tooltip of the profile control (unchanged from the
+  /// previous Home, so screen-reader users find it under the same name).
+  static const String profileLabel = 'Profile, privacy & support contacts';
+
+  /// The six voluntary inputs with short, honest descriptions of what each
+  /// screen does today, and their production destinations.
+  static final List<NatureModality> modalities = [
+    NatureModality(Icons.wb_twilight_outlined, 'Check-in', 'Mood, energy and stress',
+        () => const CheckInScreen()),
+    NatureModality(Icons.menu_book_outlined, 'Journal', 'Write freely · not saved yet',
+        () => const JournalScreen()),
+    NatureModality(Icons.bedtime_outlined, 'Sleep', 'Duration, timing and rest',
+        () => const SleepScreen()),
+    NatureModality(Icons.layers_outlined, 'Workload', 'Demand, effort and deadlines',
+        () => const WorkloadScreen()),
+    NatureModality(Icons.mic_none_rounded, 'Voice', 'Planned · demo only, no audio recorded',
+        () => const VoiceScreen()),
+    NatureModality(Icons.directions_walk_rounded, 'Activity',
+        'Manual entry · no health app connected', () => const ActivityScreen()),
+  ];
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  final ScrollController _scroll = ScrollController();
+  final ValueNotifier<double> _scrollOffset = ValueNotifier(0);
 
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() => _scrollOffset.value = _scroll.offset);
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _scrollOffset.dispose();
+    super.dispose();
+  }
+
+  void _open(Widget screen) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+
+  void _openInsights() =>
+      widget.onOpenInsights != null ? widget.onOpenInsights!() : _open(const InsightsScreen());
+
+  void _openProfile() =>
+      widget.onOpenProfile != null ? widget.onOpenProfile!() : _open(const SettingsScreen());
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SenseColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: SenseSpacing.screenHorizontal,
-            vertical: 16.0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header bar (brand block flexes so large text wraps, not overflows)
-              Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                    children: [
-                      const SenseLogoMark(size: 36),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SENSE',
-                            style: SenseTypography.labelBold.copyWith(
-                              fontSize: 16,
-                              letterSpacing: 1.2,
-                              color: SenseColors.navy900,
-                            ),
-                          ),
-                          Text(
-                            'Daily Well-being Overview',
-                            style: SenseTypography.caption.copyWith(
-                              color: SenseColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                        ),
-                      ),
-                    ],
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Developer-only component gallery: compiled out of
-                      // release builds (kReleaseMode is a compile-time constant).
-                      if (!kReleaseMode)
-                        IconButton(
-                          icon: const Icon(Icons.style_outlined, color: SenseColors.blue600),
-                          tooltip: 'Design System Showcase (developer only)',
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const DesignShowcaseScreen()),
-                            );
-                          },
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.shield_outlined, color: SenseColors.navy900),
-                        tooltip: 'Profile, privacy & support contacts',
-                        onPressed: widget.onOpenProfile ??
-                            () => Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                                ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // (Filter chips removed: they highlighted on tap but filtered
-              // nothing, and no filtering behaviour is defined.)
-
-              // Hero Current Stress Card (UI Toolkit Board)
-              // No baseline exists yet, so show an honest empty state rather
-              // than a stress level that was never calculated.
-              StressSummaryCard(
-                statusText: PrototypeCopy.noBaselineTitle,
-                subtitle: PrototypeCopy.noBaselineDescription,
-                onTap: widget.onOpenInsights ??
-                    () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const InsightsScreen()),
-                        ),
-              ),
-              const SizedBox(height: 24),
-
-              // Section Heading: Quick Actions (badge moves to a new line if needed)
-              SizedBox(
-                width: double.infinity, // lets spaceBetween reach the right edge
-                child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  Text(
-                    'Record Daily Indicators',
-                    style: SenseTypography.h3.copyWith(
-                      color: SenseColors.navy900,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SenseProvenanceBadge(text: 'Voluntary Inputs'),
-                ],
-              ),
-              ),
-              const SizedBox(height: 12),
-
-              // Quick Action Tiles (3x2 on phones; 2 columns when narrow/large text)
-              _ResponsiveTileGrid(
-                children: [
-                  QuickActionTile(
-                    label: 'Check-in',
-                    icon: Icons.favorite_border_rounded,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const CheckInScreen()),
-                      );
-                    },
-                  ),
-                  QuickActionTile(
-                    label: 'Journal',
-                    icon: Icons.menu_book_rounded,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const JournalScreen()),
-                      );
-                    },
-                  ),
-                  QuickActionTile(
-                    label: 'Sleep',
-                    icon: Icons.bedtime_outlined,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const SleepScreen()),
-                      );
-                    },
-                  ),
-                  QuickActionTile(
-                    label: 'Workload',
-                    icon: Icons.layers_outlined,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const WorkloadScreen()),
-                      );
-                    },
-                  ),
-                  QuickActionTile(
-                    label: 'Voice',
-                    icon: Icons.mic_none_rounded,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const VoiceScreen()),
-                      );
-                    },
-                  ),
-                  QuickActionTile(
-                    label: 'Activity',
-                    icon: Icons.directions_run_rounded,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ActivityScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Section Heading: Recent Observation
-              SizedBox(
-                width: double.infinity, // lets spaceBetween reach the right edge
-                child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  Text(
-                    'Observed Pattern',
-                    style: SenseTypography.h3.copyWith(
-                      color: SenseColors.navy900,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SenseProvenanceBadge.sampleData(),
-                ],
-              ),
-              ),
-              const SizedBox(height: 12),
-
-              // Insight Card (matching UI Toolkit Board)
-              SenseInsightCard(
-                title: 'Example observation',
-                narrative:
-                    'Example: recorded sleep duration and self-reported stress '
-                    'changed during the same period. This is illustrative, not '
-                    'based on your data.',
-                provenance: PrototypeCopy.sampleDataLabel,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const InsightDetailScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
+    return Theme(
+      data: NatureTheme.light,
+      child: Scaffold(
+        backgroundColor: NatureColors.background,
+        body: LayoutBuilder(builder: (context, c) {
+          return c.maxWidth >= NatureBreakpoints.desktop ? _desktop(context, c) : _phone(context, c);
+        }),
       ),
     );
   }
-}
 
-/// Grid of quick-action tiles whose row height follows the content, so tiles
-/// grow with larger text instead of overflowing a fixed aspect ratio.
-/// Uses 2 columns on narrow widths or large text, otherwise 3.
-class _ResponsiveTileGrid extends StatelessWidget {
-  final List<Widget> children;
-  static const double _gap = 12;
+  // Sheet content shared by all layouts: greeting, primary action, Today.
+  Widget _sheetContent() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          NatureWelcome(date: DateTime.now()),
+          const SizedBox(height: 22),
+          NaturePrintedAction(
+            label: "Begin today's check-in",
+            onTap: () => _open(const CheckInScreen()),
+          ),
+          const SizedBox(height: 26),
+          NatureTodayEntry(onAbout: _openInsights),
+        ],
+      );
 
-  const _ResponsiveTileGrid({required this.children});
+  Widget get _example => NatureExampleObservation(onOpen: () => _open(const InsightDetailScreen()));
+  Widget get _support => NatureSupportLine(onTap: _openProfile);
 
-  @override
-  Widget build(BuildContext context) {
-    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = (constraints.maxWidth < 300 || textScale >= 1.5) ? 2 : 3;
-        final rows = <Widget>[];
-        for (var i = 0; i < children.length; i += columns) {
-          final rowChildren = <Widget>[];
-          for (var c = 0; c < columns; c++) {
-            if (c > 0) rowChildren.add(const SizedBox(width: _gap));
-            final idx = i + c;
-            rowChildren.add(Expanded(
-              // Minimum keeps the toolkit's near-square tiles; content can
-              // still make the row taller at larger text sizes.
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 120),
-                child: idx < children.length ? children[idx] : const SizedBox.shrink(),
+  /// Developer-only component gallery, compiled out of release builds.
+  List<Widget> get _devActions => [
+        if (!kReleaseMode)
+          SenseTappable(
+            semanticLabel: 'Design System Showcase (developer only)',
+            tooltip: 'Design System Showcase (developer only)',
+            circle: true,
+            focusColor: NatureColors.focus,
+            hoverColor: NatureColors.hover,
+            onTap: () => _open(const DesignShowcaseScreen()),
+            child: const SizedBox(
+              width: 48,
+              height: 48,
+              child: Icon(Icons.style_outlined, color: NatureColors.inkMuted, size: 21),
+            ),
+          ),
+      ];
+
+  // Desktop (>= 1024): the landscape spans the window under the top bar; a
+  // floating journal sheet sits over its lower left, leaving the sun, river
+  // and rock visible; the inputs and observation follow in wide columns.
+  Widget _desktop(BuildContext context, BoxConstraints c) {
+    final width = c.maxWidth;
+    final sceneH = (MediaQuery.sizeOf(context).height * 0.74).clamp(480.0, 700.0);
+    final margin = width > NatureBreakpoints.maxContent + 80
+        ? (width - NatureBreakpoints.maxContent) / 2
+        : 40.0;
+    return SingleChildScrollView(
+      controller: _scroll,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: sceneH,
+                child: LivingLandscape(
+                  height: sceneH,
+                  scrollOffset: _scrollOffset,
+                  sunAt: const Alignment(0.42, -0.42),
+                  rockLeft: 0.42,
+                  rockWidth: 0.2,
+                ),
               ),
-            ));
-          }
-          if (rows.isNotEmpty) rows.add(const SizedBox(height: _gap));
-          rows.add(IntrinsicHeight(
-            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: rowChildren),
-          ));
-        }
-        return Column(children: rows);
-      },
+              Positioned(
+                top: sceneH - 16,
+                left: 0,
+                right: 0,
+                height: 22,
+                child: const IgnorePointer(child: CustomPaint(painter: NatureTornEdgePainter())),
+              ),
+              SizedBox(height: sceneH + 40),
+              Padding(
+                padding: EdgeInsets.only(left: margin, top: sceneH * 0.2),
+                child: SizedBox(
+                  width: 470,
+                  child: NatureJournalSheet(floating: true, child: _sheetContent()),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(margin, 56, margin, 72),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                NatureWaysToReflect(
+                    modalities: DashboardScreen.modalities,
+                    open: _open,
+                    columns: width >= 1240 ? 3 : 2),
+                const SizedBox(height: 56),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 6, child: _example),
+                    const SizedBox(width: 56),
+                    Expanded(
+                        flex: 5,
+                        child: Padding(padding: const EdgeInsets.only(top: 6), child: _support)),
+                  ],
+                ),
+                if (_devActions.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Align(alignment: Alignment.centerRight, child: _devActions.first),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Phone and tablet: the landscape runs edge to edge and a journal sheet with
+  // a torn top edge rises over its foreground. On tablets the text column is
+  // capped at a comfortable reading width and centred.
+  Widget _phone(BuildContext context, BoxConstraints c) {
+    final width = c.maxWidth;
+    final sceneH = (MediaQuery.sizeOf(context).height * 0.46)
+        .clamp(300.0, width >= NatureBreakpoints.tablet ? 460.0 : 420.0);
+    final side = width > NatureBreakpoints.maxReading + 2 * NatureSpace.gutter
+        ? (width - NatureBreakpoints.maxReading) / 2
+        : NatureSpace.gutter;
+    return ListView(
+      controller: _scroll,
+      padding: EdgeInsets.zero,
+      children: [
+        Stack(
+          children: [
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: sceneH,
+              child: LivingLandscape(
+                height: sceneH,
+                scrollOffset: _scrollOffset,
+                sunAt: const Alignment(0.5, -0.38),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: sceneH - 54),
+              child: NatureJournalSheet(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: side - NatureSpace.gutter),
+                  child: _sheetContent(),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(side - 4, 4, side - 8, 0),
+                  child: NatureMasthead(
+                    onProfile: _openProfile,
+                    profileLabel: DashboardScreen.profileLabel,
+                    actions: _devActions,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(side, 12, side, NatureSpace.xxxl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              NatureWaysToReflect(modalities: DashboardScreen.modalities, open: _open),
+              const SizedBox(height: 36),
+              _example,
+              const SizedBox(height: NatureSpace.xl),
+              _support,
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

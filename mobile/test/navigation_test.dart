@@ -6,10 +6,11 @@ import 'package:mindpulse/presentation/screens/check_in_screen.dart';
 import 'package:mindpulse/presentation/screens/consent_screen.dart';
 import 'package:mindpulse/presentation/screens/dashboard_screen.dart';
 import 'package:mindpulse/presentation/screens/main_shell.dart';
-import 'package:mindpulse/presentation/widgets/sense_navigation.dart';
+import 'package:mindpulse/presentation/nature/nature_navigation.dart';
 
-/// Task 3: bottom navigation, Profile destination, Back behaviour, and
-/// large-text / narrow-viewport layouts. Overflow errors are NOT ignored:
+/// Task 3 (updated for the Living Landscapes shell, Phase 1): bottom
+/// navigation, Profile destination, Back behaviour, and large-text /
+/// narrow-viewport layouts. Overflow errors are NOT ignored:
 /// any RenderFlex overflow fails the test.
 void main() {
   setUp(ConsentPreferences.instance.reset);
@@ -26,6 +27,11 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = textScale;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
+    // The production Home landscape animates continuously, so pumpAndSettle can
+    // only settle with reduced motion. Motion is covered by its own tests.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pumpWidget(MaterialApp(theme: AppTheme.lightTheme, home: home));
     await tester.pumpAndSettle();
@@ -35,14 +41,17 @@ void main() {
 
   /// A bottom-navigation item (scoped to the bar: screens may reuse the words).
   Finder nav(String label) =>
-      find.descendant(of: find.byType(SenseBottomNavBar), matching: find.text(label));
+      find.descendant(of: find.byType(NatureBottomBar), matching: find.text(label));
+
+  /// Something only the Home page shows.
+  Finder homeMarker() => find.text("Begin today's check-in");
 
   NavigatorState rootNav(WidgetTester tester) =>
       tester.state<NavigatorState>(find.byType(Navigator).first);
 
   testWidgets('Home is shown first and the Tools tab no longer exists', (tester) async {
     await pumpShell(tester);
-    expect(find.text('Daily Well-being Overview'), findsOneWidget);
+    expect(homeMarker(), findsOneWidget);
     expect(find.text('Tools'), findsNothing);
     expect(nav('Home'), findsOneWidget);
     expect(nav('Insights'), findsOneWidget);
@@ -54,18 +63,18 @@ void main() {
     await pumpShell(tester);
     await tester.tap(nav('Insights'));
     await tester.pumpAndSettle();
-    expect(find.text('Longitudinal Insights'), findsOneWidget);
+    expect(find.text('Longitudinal insights'), findsOneWidget);
     expect(rootNav(tester).canPop(), isFalse);
 
     await tester.tap(nav('Profile'));
     await tester.pumpAndSettle();
     expect(find.text('Profile & settings'), findsOneWidget);
-    expect(find.text('Longitudinal Insights'), findsNothing);
+    expect(find.text('Longitudinal insights'), findsNothing);
     expect(rootNav(tester).canPop(), isFalse);
 
     await tester.tap(nav('Home'));
     await tester.pumpAndSettle();
-    expect(find.text('Daily Well-being Overview'), findsOneWidget);
+    expect(homeMarker(), findsOneWidget);
   });
 
   testWidgets('Repeated tab taps keep exactly one dashboard and no extra routes',
@@ -112,16 +121,22 @@ void main() {
     expect(find.text('Profile & settings'), findsOneWidget);
   });
 
-  testWidgets('Dashboard hero card and shield icon switch tabs (no duplicates)',
+  testWidgets('Home "About your insights" link and shield icon switch tabs (no duplicates)',
       (tester) async {
     await pumpShell(tester);
-    await tester.tap(find.text('No pattern yet'));
+    expect(find.text('No pattern yet'), findsOneWidget);
+    await tester.ensureVisible(find.text('About your insights'));
     await tester.pumpAndSettle();
-    expect(find.text('Longitudinal Insights'), findsOneWidget);
+    await tester.tap(find.text('About your insights'));
+    await tester.pumpAndSettle();
+    expect(find.text('Longitudinal insights'), findsOneWidget);
     expect(tester.getSemantics(tab('Insights')), isSemantics(isSelected: true));
     expect(rootNav(tester).canPop(), isFalse);
 
     await tester.tap(nav('Home'));
+    await tester.pumpAndSettle();
+    // Home kept its scroll position (IndexedStack), so bring the shield back.
+    await tester.ensureVisible(find.byTooltip('Profile, privacy & support contacts'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Profile, privacy & support contacts'));
     await tester.pumpAndSettle();
@@ -135,8 +150,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(find.text('Daily Well-being Overview'), findsOneWidget);
-    expect(find.text('Longitudinal Insights'), findsNothing);
+    expect(homeMarker(), findsOneWidget);
+    expect(find.text('Longitudinal insights'), findsNothing);
   });
 
   testWidgets('Profile → review consent → Done returns to Profile with shared choices',
