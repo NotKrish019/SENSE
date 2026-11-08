@@ -105,7 +105,9 @@ class _SheetPainter extends CustomPainter {
 // ---- Primary action: a printed button with a misregistered ochre layer --------
 class NaturePrintedAction extends StatefulWidget {
   final String label;
-  final VoidCallback onTap;
+
+  /// Null disables the action (announced as disabled; no ochre print layer).
+  final VoidCallback? onTap;
 
   /// Trailing icon; defaults to a forward arrow, null for none.
   final IconData? icon;
@@ -124,7 +126,8 @@ class _NaturePrintedActionState extends State<NaturePrintedAction> {
   Widget build(BuildContext context) {
     // The forest "print" sits 4 px off its ochre layer; pressing settles it
     // onto the ochre (a tactile, physical press without shadows).
-    final settle = _pressed ? 4.0 : (_hover ? 1.5 : 0.0);
+    final enabled = widget.onTap != null;
+    final settle = !enabled ? 4.0 : (_pressed ? 4.0 : (_hover ? 1.5 : 0.0));
     return Padding(
       padding: const EdgeInsets.only(right: 4, bottom: 4),
       child: Stack(
@@ -135,10 +138,10 @@ class _NaturePrintedActionState extends State<NaturePrintedAction> {
             top: 4,
             right: -4,
             bottom: -4,
-            child: const DecoratedBox(
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: NatureColors.sunOchre,
-                borderRadius: BorderRadius.all(Radius.circular(NatureRadii.md)),
+                color: enabled ? NatureColors.sunOchre : NatureColors.divider,
+                borderRadius: const BorderRadius.all(Radius.circular(NatureRadii.md)),
               ),
             ),
           ),
@@ -159,7 +162,9 @@ class _NaturePrintedActionState extends State<NaturePrintedAction> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   decoration: BoxDecoration(
-                    color: _pressed ? NatureColors.forestDeep : NatureColors.primary,
+                    color: !enabled
+                        ? NatureColors.divider
+                        : (_pressed ? NatureColors.forestDeep : NatureColors.primary),
                     borderRadius: NatureRadii.mdBorder,
                   ),
                   child: Row(
@@ -167,12 +172,15 @@ class _NaturePrintedActionState extends State<NaturePrintedAction> {
                     children: [
                       Flexible(
                         child: Text(widget.label,
-                            style: NatureType.button.copyWith(fontWeight: FontWeight.w600),
+                            style: NatureType.button.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: enabled ? NatureColors.primaryForeground : NatureColors.inkMuted),
                             textAlign: TextAlign.center),
                       ),
                       if (widget.icon != null) ...[
                         const SizedBox(width: 10),
-                        Icon(widget.icon, color: NatureColors.primaryForeground, size: 20),
+                        Icon(widget.icon,
+                            color: enabled ? NatureColors.primaryForeground : NatureColors.inkMuted, size: 20),
                       ],
                     ],
                   ),
@@ -485,8 +493,13 @@ class NatureMarginNote extends StatelessWidget {
 /// printed action.
 class NatureQuietButton extends StatelessWidget {
   final String label;
-  final VoidCallback onTap;
-  const NatureQuietButton({super.key, required this.label, required this.onTap});
+
+  /// Null disables the button (announced as disabled).
+  final VoidCallback? onTap;
+
+  /// Draw the label in the text-safe coral (destructive actions such as Clear).
+  final bool caution;
+  const NatureQuietButton({super.key, required this.label, required this.onTap, this.caution = false});
 
   @override
   Widget build(BuildContext context) {
@@ -504,11 +517,16 @@ class NatureQuietButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: NatureRadii.mdBorder,
-            border: Border.all(color: NatureColors.borderStrong, width: 1.5),
+            border: Border.all(
+                color: onTap == null ? NatureColors.border : NatureColors.borderStrong, width: 1.5),
           ),
           child: Text(label,
               textAlign: TextAlign.center,
-              style: NatureType.button.copyWith(color: NatureColors.forest, fontWeight: FontWeight.w600)),
+              style: NatureType.button.copyWith(
+                  color: onTap == null
+                      ? NatureColors.inkMuted
+                      : (caution ? NatureColors.coralInk : NatureColors.forest),
+                  fontWeight: FontWeight.w600)),
         ),
       ),
     );
@@ -576,14 +594,45 @@ class NatureSlider extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: Text(minLabel, style: ends)),
-              const SizedBox(width: 12),
-              Expanded(child: Text(maxLabel, textAlign: TextAlign.right, style: ends)),
-            ],
-          ),
+          child: LayoutBuilder(builder: (context, c) {
+            // Each end label gets half the width while its longest word fits
+            // there; otherwise the two stack (min left, max right) so no word
+            // ever breaks.
+            final scaler = MediaQuery.textScalerOf(context);
+            double longest(String t) {
+              var w = 0.0;
+              for (final word in t.split(RegExp(r'\s+'))) {
+                final tp = TextPainter(
+                  text: TextSpan(text: word, style: ends),
+                  textScaler: scaler,
+                  textDirection: TextDirection.ltr,
+                  maxLines: 1,
+                )..layout();
+                w = math.max(w, tp.width);
+                tp.dispose();
+              }
+              return w;
+            }
+            final half = (c.maxWidth - 12) / 2;
+            if (longest(minLabel) <= half && longest(maxLabel) <= half) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: Text(minLabel, style: ends)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(maxLabel, textAlign: TextAlign.right, style: ends)),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(minLabel, style: ends),
+                const SizedBox(height: 2),
+                Text(maxLabel, textAlign: TextAlign.right, style: ends),
+              ],
+            );
+          }),
         ),
       ],
     );

@@ -2,6 +2,7 @@
 // node cdp.mjs '<json plan>'
 // plan: {url, width, height, dpr, textScale, reducedMotion, out, actions:[...]}
 // actions: {click:"aria label"} {key:"Tab"|"Enter"|" "} {wait:ms} {shot:"name"}
+//          {type:"text"} (inserts text into the focused field)
 //          {scroll:px} {eval:"js"} {fullshot:"name"} {focused:true}
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -67,6 +68,10 @@ try {
       await mouse('mouseMoved', r2.x, r2.y); await mouse('mousePressed', r2.x, r2.y); await sleep(60); await mouse('mouseReleased', r2.x, r2.y); await sleep(80); await mouse('mouseMoved', 2, 2);
       log.push(`clicked ${a.click} @${Math.round(r2.x)},${Math.round(r2.y)} size ${Math.round(r2.w)}x${Math.round(r2.h)}`);
       await sleep(a.after || 700);
+    } else if (a.type !== undefined) {
+      await send('Input.insertText', { text: a.type });
+      log.push(`typed ${a.type.length} chars`);
+      await sleep(a.after || 500);
     } else if (a.key) {
       const [code, name] = keys[a.key];
       const mods = a.key === 'ShiftTab' ? 8 : 0;
