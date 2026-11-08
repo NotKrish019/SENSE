@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="mood-4-t mood-4-d">
+  <title id="mood-4-t">Good</title>
+  <desc id="mood-4-d">A large warm sun with rays, partly behind a small cloud. No rain.</desc>
+  <circle cx="27" cy="26" r="23" fill="#F0C985" opacity="0.5"/>
+  <path d="M14.1 37.4 Q11.7 39.9 10.0 43.0 Q15.3 43.0 18.1 40.7 Z M9.9 27.9 Q7.0 28.5 4.3 30.0 Q8.2 33.1 11.3 32.9 Z M11.9 17.7 Q8.2 16.3 4.3 15.4 Q6.6 20.6 10.1 22.6 Z M19.4 10.6 Q17.6 7.8 15.2 5.6 Q13.8 10.5 15.1 13.6 Z M29.6 9.0 Q29.7 4.7 29.2 0.6 Q25.0 4.8 24.4 9.0 Z M38.9 13.6 Q41.0 10.8 42.4 7.6 Q37.2 8.1 34.6 10.6 Z M43.9 22.6 Q46.7 21.7 49.2 20.0 Q45.1 17.3 42.1 17.7 Z" fill="#E5AE56" stroke="#8A5B14" stroke-width="1.3" stroke-linejoin="round"/>
+  <circle cx="27" cy="26" r="14" fill="#E5AE56" transform="translate(1.3 1.5)"/>
+  <circle cx="27" cy="26" r="14" fill="none" stroke="#8A5B14" stroke-width="2.2"/>
+  <path d="M19.5 23 C20.5 18 24.5 16 29 17" stroke="#8A5B14" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+  <path d="M35 51 C29 51 29 43 35 43 C35 37 43 35 46 39 C49 34 57 36 56 42 C61 43 61 51 55 51 C48 52 41 52 35 51 Z" fill="#F7EEDC" transform="translate(1.3 1.5)"/>
+  <path d="M35 51 C29 51 29 43 35 43 C35 37 43 35 46 39 C49 34 57 36 56 42 C61 43 61 51 55 51 C48 52 41 52 35 51 Z" fill="#F7EEDC" opacity="0.9"/>
+  <path d="M35 51 C29 51 29 43 35 43 C35 37 43 35 46 39 C49 34 57 36 56 42 C61 43 61 51 55 51 C48 52 41 52 35 51 Z" fill="none" stroke="#293A35" stroke-width="2.2" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="mood-3-t mood-3-d">
+  <title id="mood-3-t">Neutral</title>
+  <desc id="mood-3-d">A soft, low cloud bank above calm horizontal lines of mist.</desc>
+  <path d="M12 36 C6 36 6 29 12 28 C12 22 19 20 23 23 C26 17 35 16 38 21 C42 17 51 19 50 25 C56 25 58 36 51 36 C38 37 24 37 12 36 Z" fill="#E9E6D8" transform="translate(1.3 1.5)"/>
+  <path d="M12 36 C6 36 6 29 12 28 C12 22 19 20 23 23 C26 17 35 16 38 21 C42 17 51 19 50 25 C56 25 58 36 51 36 C38 37 24 37 12 36 Z" fill="none" stroke="#293A35" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M9 43.5 C17 42 25 45 33 43.5 C41 42 48 45 55 43.5" stroke="#5A685F" stroke-width="2.3" stroke-linecap="round" fill="none"/>
+  <path d="M15 50.5 C21 49 29 52 36 50.5 C42 49 46 51.5 50 50.5" stroke="#5A685F" stroke-width="2.3" stroke-linecap="round" fill="none"/>
+  <path d="M8 57.5 C13 56.5 20 58.5 27 57.5 M34 57.5 C40 56.5 47 58.5 53 57.5" stroke="#5A685F" stroke-width="2.3" stroke-linecap="round" fill="none"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="mood-5-t mood-5-d">
+  <title id="mood-5-t">Great</title>
+  <desc id="mood-5-d">A large, unobstructed sun with full rays above a gentle green hill.</desc>
+  <circle cx="32" cy="24" r="23.5" fill="#F0C985" opacity="0.4"/>
+  <circle cx="32" cy="24" r="17.5" fill="#F0C985" opacity="0.45"/>
+  <path d="M34.8 9.0 Q34.9 4.8 34.0 0.6 Q29.9 4.8 29.2 9.0 Z M41.3 12.1 Q42.4 10.4 42.9 8.4 Q39.1 8.5 37.7 10.0 Z M46.4 18.9 Q49.7 17.2 52.4 14.5 Q47.2 12.8 43.6 14.1 Z M47.0 26.1 Q49.2 26.2 51.4 25.7 Q49.2 22.4 47.0 21.9 Z M43.6 33.9 Q47.0 36.0 50.8 37.2 Q49.5 31.7 46.4 29.1 Z M37.7 38.0 Q38.5 39.6 39.8 40.8 Q41.7 37.7 41.3 35.9 Z M29.2 39.0 Q29.1 43.2 30.0 47.4 Q34.1 43.2 34.8 39.0 Z M22.7 35.9 Q21.6 37.6 21.1 39.6 Q24.9 39.5 26.3 38.0 Z M17.6 29.1 Q14.5 30.7 12.1 33.3 Q17.0 35.1 20.4 33.9 Z M17.0 21.9 Q14.8 21.8 12.6 22.3 Q14.8 25.6 17.0 26.1 Z M20.4 14.1 Q17.0 12.0 13.2 10.8 Q14.5 16.3 17.6 18.9 Z M26.3 10.0 Q25.4 8.2 24.0 6.8 Q22.1 10.1 22.7 12.1 Z" fill="#E5AE56" stroke="#8A5B14" stroke-width="1.3" stroke-linejoin="round"/>
+  <circle cx="32" cy="24" r="12" fill="#E5AE56" transform="translate(1.3 1.5)"/>
+  <circle cx="32" cy="24" r="12" fill="none" stroke="#8A5B14" stroke-width="2.2"/>
+  <path d="M25.5 21 C26.5 16.5 30.5 14.8 34 15.6" stroke="#8A5B14" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+  <path d="M4 60 C11 52 23 49.5 33 51.5 C43 53.5 53 49.5 60 56 C61.5 58 61 61 57.5 61 L7 61 C4.5 61 3 61.5 4 60 Z" fill="#7FA08A" transform="translate(1.3 1.5)"/>
+  <path d="M4 60 C11 52 23 49.5 33 51.5 C43 53.5 53 49.5 60 56" stroke="#3F6556" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+  <path d="M16 57 l1 -3 M24 55.5 l0.6 -3 M41 56 l-0.4 -3 M49 56.5 l-1 -3" stroke="#3F6556" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+</svg>

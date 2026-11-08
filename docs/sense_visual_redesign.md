@@ -273,5 +273,78 @@ flutter run -d chrome --web-port 8766 -t lib/main_redesign_preview.dart
 | `mobile/lib/presentation/redesign/nature_home_preview.dart` | Responsive Home, journal sheet, bottom and top bars, components |
 | `mobile/test/redesign_home_preview_test.dart` | Contrast, behaviour, honesty, motion, responsive and accessibility tests |
 | `mobile/lib/presentation/widgets/sense_tappable.dart` | Optional `focusColor`, `hoverColor`, `onHover` (defaults unchanged) |
+| `mobile/lib/presentation/redesign/nature_check_in_preview.dart` | Check-in prototype: still-water band, mood scale, sliders, steps, honest finish page |
+| `mobile/lib/presentation/redesign/mood_glyph.dart` | `MoodGlyph` painter and the SVG path parser it uses |
+| `mobile/lib/presentation/redesign/mood_glyph_data.dart` | Generated from the mood SVGs; do not edit by hand |
+| `mobile/test/redesign_check_in_preview_test.dart` | Mood model, artwork, selection, keyboard, semantics, flow, honesty and responsive tests |
 
-**Assets:** all artwork is original code, the source of truth; no image files, no runtime downloads. Raster images exist only in memory at runtime (baked from that code).
+**Assets:** all artwork is original code, the source of truth; no image files, no runtime downloads. Raster images exist only in memory at runtime (baked from that code). The mood symbols are the one exception to "code is the source": their editable originals are the SVGs in `docs/redesign/mood-symbols/`, converted to Dart by `docs/redesign/mood-symbols/tools/gen_dart.py`, and a test checks that the two match.
+
+---
+
+## 16. Check-in prototype (awaiting review)
+
+Path: Home → "Begin today's check-in" (also the bottom-bar disc, the desktop "New check-in" button and the Check-in row) → redesigned check-in. The production `CheckInScreen` is unchanged and is no longer reachable from the preview.
+
+**Kept exactly from production:** mood values, order and labels (1 Very Low … 5 Great, compared with the production source by a test); defaults (mood 3, motivation 3, stress 2); the two-step sequence and Back; 1 to 5 sliders in steps of 1; screen-reader names ("Mood: Low", "Motivation or energy level", "Perceived stress", values read as "n of 5"); the mood and stress question wording; the planned-processing notice; the honest "not saved" outcome. No persistence, no model, no new questions.
+
+**Wording changes for review:**
+- The finish action reads "Finish check-in" instead of "Save Check-in", because nothing is saved.
+- The jargon subtitle ("current mood valence") is replaced by a short note that the check-in is optional.
+- Em dashes are removed ("1 · Relaxed", "Check-in complete, not saved").
+- The heading stays "How are you feeling right now?", not "today", because changing the time frame would change what the question measures.
+
+**Mood scale:** five across whenever every word fits whole (360 px and wider at normal text); otherwise an ordered list, top to bottom (320 px, large text), never a broken grid. Selected: 2.5 px forest outline, check badge, paper surface with an offset ochre print, a slightly raised symbol, a heavier label. The keyboard focus ring is drawn 4 px outside the tile so it never merges with the selected outline. Animations are 110 to 180 ms with no bounce; with reduced motion they are instant.
+
+**Verification:** `docs/redesign/check-in-preview/` contains a selected representative real-Chrome screenshot (before and after) and the QA scripts that produced it; the complete responsive screenshot galleries (flow, states, every width at 1x and 2x text) can be regenerated using the accompanying QA scripts and are not committed.
+
+---
+
+## 17. Production rollout, Phase 1 (awaiting review)
+
+The approved Home, shell, check-in and mood symbols now run in the real app (`lib/main.dart`: Splash, Onboarding, Consent, then `MainShell`). Journal, Sleep, Workload, Voice, Activity, Insights, Insight detail, Onboarding, Consent and Profile are **not** redesigned yet; they keep `AppTheme.lightTheme` until their phase.
+
+**Where the code lives**
+
+| Production | Purpose |
+|---|---|
+| `mobile/lib/core/theme/nature_tokens.dart` | Living Landscapes tokens and `NatureTheme.light` (applied only around redesigned screens, so both themes coexist during migration) |
+| `mobile/lib/presentation/nature/living_landscape.dart` | The animated paper-diorama landscape (moved from the prototype unchanged) |
+| `mobile/lib/presentation/nature/mood_glyph.dart`, `mood_glyph_data.dart` | Mood symbol painter; data generated from `docs/redesign/mood-symbols/*.svg` by `tools/gen_dart.py` |
+| `mobile/lib/presentation/nature/mood_scale.dart` | Mood tiles (selected state, offset focus ring) |
+| `mobile/lib/presentation/nature/nature_widgets.dart` | Journal sheet and page, printed and quiet buttons, links, tags, sprig, still-water band, slider |
+| `mobile/lib/presentation/nature/nature_navigation.dart` | Bottom bar, top bar, check-in disc |
+| `mobile/lib/presentation/nature/nature_home_sections.dart` | Masthead, welcome, Today, ways to reflect, sample observation, support line |
+| `mobile/lib/presentation/screens/dashboard_screen.dart` | Production Home (same class and callbacks as before) |
+| `mobile/lib/presentation/screens/main_shell.dart` | Responsive shell: bottom bar under 1024 px, top bar from 1024 px |
+| `mobile/lib/presentation/screens/check_in_screen.dart` | Production check-in; `CheckInScreen.moodOptions` is the mood model |
+
+**Preview only:** `mobile/lib/main_redesign_preview.dart`, `mobile/lib/presentation/redesign/nature_home_preview.dart` and `nature_check_in_preview.dart` keep their own screen layouts as the approved reference. The other files in `redesign/` are one-line re-exports of the production modules. In Chrome at 412 px with reduced motion, production and preview are pixel-identical.
+
+**Palette note:** superseded in Phase 2, see section 18.
+
+**Icons:** `mobile/tool/generate_brand_assets.py` draws the app icon and maskable icon with a forest tile, parchment mark and ochre centre (geometry unchanged); `--png` renders `web/favicon.png` and `web/icons/*`. The horizontal lockup and the mark SVGs are unchanged.
+
+**Review images:** `docs/redesign/production-phase1/` (real production build, entered through the real flow).
+
+---
+
+## 18. Production rollout, Phase 2: Insights, Insight detail, Profile (awaiting review)
+
+Insights, Insight detail and Profile & settings are now in the Living Landscapes design in the real app. Journal, Sleep, Workload, Voice, Activity, Onboarding, Consent and Splash are not redesigned yet.
+
+**Shared structure.** All three use `NatureJournalPage` (the check-in's page): an illustrated band, a torn-edge journal sheet, and on desktop a floating sheet over a full-width scene. Tab roots have no back control; pushed pages have one named "Back". A new original band, `MeadowBand` (`mobile/lib/presentation/nature/meadow_band.dart`), draws layered meadow ridges with engraved contour lines (Insights, Insight detail) or a path winding into the hills (Profile). The main shell no longer wraps these tabs in the Phase 1 interim 760 px column.
+
+**Insights.** An editorial page of sample charts (`nature_charts.dart`): a forest line with an off-register ochre plate on ruled lines, seven river-blue bars with Friday in forest, and a rest-quality ring. Every chart carries a sample tag and a spoken description; bars keep "Wednesday, sample bar" and switch to single letters only when the three-letter names do not fit. The Day / Week / Month selector is kept, with its hint that sample charts do not change. Factor comparison stays an honest "not available yet" note. No scores, risk levels or diagnostic language.
+
+**Insight detail.** An editorial explanation in labelled parts: Sample observation, Correlation, Causation, Personal baseline, Not built yet, then general well-being ideas marked as general information, not advice or treatment. Same constructor parameters as before.
+
+**Profile & settings.** Honest profile placeholder; 24/7 helplines under a coral margin rule; consent review (still the shared in-memory `ConsentPreferences`, opening the same consent screen); privacy and data rights as ruled index rows; Export and Erase open a paper dialog with the unchanged "not available yet" copy; About shows the forest lockup.
+
+**Phase 1 follow-ups**
+
+- *Pale sage contrast.* `#D9E4D4` (approved) stays, but only for non-text: icon wells and illustration. On it, muted text is 4.47:1, teal 4.39:1 and ochre 4.46:1. Text-bearing sage surfaces and every hover tint now use `NatureColors.sageWash` (`#EEF0E6`, pale sage at 35 % over paper), where all text colours are at least 5.0:1. `surfaceQuiet` and the new `hover` token point to it; `paleSageLight` is retired.
+- *Logo.* `SenseLogoVariant.forestBadge` (forest tile, parchment mark, ochre centre, identical geometry) is used on redesigned screens; `SenseLogo` takes a `variant`. `tool/generate_brand_assets.py` adds `assets/branding/sense_logo_horizontal_forest.svg`. The blue lockup and the blue in-app badge remain for Splash and Onboarding until their phase.
+- *Performance with a GPU.* Headless Chrome on Apple M2 with Metal WebGL: production Home at 60 fps ambient and during pointer tilt, at 1280 and 412 px. Spare main-thread time drops about 18 % for ambient motion and about 52 % during tilt, and returns to idle when another tab or a pushed screen hides Home. Reduced motion: 0 pixels change over 3 s. These are M2 figures, not a claim about low-end phones.
+
+**Review images:** `docs/redesign/production-phase2/`.
