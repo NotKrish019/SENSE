@@ -50,7 +50,7 @@ class DashboardScreen extends StatefulWidget {
         () => const SleepScreen()),
     NatureModality(Icons.layers_outlined, 'Workload', 'Demand, effort and deadlines',
         () => const WorkloadScreen()),
-    NatureModality(Icons.mic_none_rounded, 'Voice', 'Planned · demo only, no audio recorded',
+    NatureModality(Icons.mic_none_rounded, 'Voice', 'Planned · not built, no audio recorded',
         () => const VoiceScreen()),
     NatureModality(Icons.directions_walk_rounded, 'Activity',
         'Manual entry · no health app connected', () => const ActivityScreen()),

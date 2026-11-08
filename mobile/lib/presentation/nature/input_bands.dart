@@ -7,7 +7,11 @@
 // * DuskBand (Sleep): the last light of the evening, a crescent moon, a few
 //   stars and dark layered hills with one lit window;
 // * TerraceBand (Workload): a sunlit hillside cut into terraces with a
-//   small cairn of balanced stones at the top.
+//   small cairn of balanced stones at the top;
+// * EchoBand (Voice, Phase 4): a still lake at first light, a songbird on a
+//   reed and the rings its song might leave on the water (no waveform);
+// * TrailBand (Activity, Phase 4): a footpath winding over rolling ground
+//   towards a signpost, a stream with stepping stones and distant peaks.
 // Original artwork drawn in code; decorative (excluded from semantics); no
 // animation, so nothing changes with reduced motion.
 
@@ -400,4 +404,248 @@ class _TerracePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_TerracePainter old) => old.tornBottom != tornBottom;
+}
+
+// ---- Voice: echo over still water (Phase 4) -------------------------------------------
+class EchoBand extends StatelessWidget {
+  final bool tornBottom;
+  const EchoBand({super.key, this.tornBottom = false});
+
+  @override
+  Widget build(BuildContext context) => _band(_EchoPainter(tornBottom));
+}
+
+class _EchoPainter extends CustomPainter {
+  final bool tornBottom;
+  const _EchoPainter(this.tornBottom);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final shore = h * (tornBottom ? 0.5 : 0.48);
+    canvas.drawRect(
+        Rect.fromLTWH(0, 0, w, shore),
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [NatureColors.skyHigh, NatureColors.skyHorizon],
+          ).createShader(Rect.fromLTWH(0, 0, w, shore)));
+
+    // Low, pale sun just above the far shore.
+    final sun = Offset(w * 0.62, shore - h * 0.12);
+    final r = math.min(h * 0.08, 24.0);
+    canvas.drawCircle(sun, r * 2.2, Paint()..color = NatureColors.sunGlow.withValues(alpha: 0.22));
+    canvas.drawCircle(sun + const Offset(1.4, 1.4), r, Paint()..color = NatureColors.sunGlow);
+
+    _ridge(canvas, size, seed: 52, base: shore + 2, amp: h * 0.12, color: NatureColors.mistRange, step: 0.12);
+    _ridge(canvas, size, seed: 14, base: shore + 3, amp: h * 0.06, color: NatureColors.eucalyptus, step: 0.2,
+        from: 0.45, to: 1);
+
+    // The lake.
+    final lake = Rect.fromLTWH(0, shore, w, h - shore);
+    canvas.drawRect(
+        lake,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.lerp(NatureColors.riverBlue, NatureColors.skyHorizon, 0.6)!,
+              Color.lerp(NatureColors.riverBlue, NatureColors.sky, 0.3)!,
+            ],
+          ).createShader(lake));
+    // Sun glints.
+    final glint = Paint()
+      ..color = NatureColors.sunGlow.withValues(alpha: 0.75)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 4; i++) {
+      final y = shore + 8 + i * 7.0;
+      final half = r * (0.9 - i * 0.18);
+      canvas.drawLine(Offset(sun.dx - half, y), Offset(sun.dx + half, y), glint);
+    }
+
+    // Reeds on the left with a songbird.
+    final rx = math.max(48.0, w * 0.2);
+    final reed = Paint()
+      ..color = NatureColors.forest
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.7
+      ..strokeCap = StrokeCap.round;
+    final rr = math.Random(29);
+    Offset? perch;
+    for (var i = 0; i < 6; i++) {
+      final x = rx - 18 + i * 7.0 + rr.nextDouble() * 3;
+      final top = shore - h * (0.06 + rr.nextDouble() * 0.16) - (i == 3 ? h * 0.08 : 0);
+      final tip = Offset(x + 2 + rr.nextDouble() * 3, top);
+      canvas.drawPath(
+          Path()
+            ..moveTo(x, shore + h * 0.12)
+            ..quadraticBezierTo(x + 1, (top + shore) / 2, tip.dx, tip.dy),
+          reed);
+      if (i == 3) perch = tip;
+    }
+    final b = perch! + const Offset(0, 2);
+    final bs = math.min(h * 0.045, 11.0);
+    final body = Path()
+      ..moveTo(b.dx - bs * 1.4, b.dy - bs * 0.2)
+      ..quadraticBezierTo(b.dx - bs * 0.2, b.dy + bs * 0.9, b.dx + bs * 0.9, b.dy - bs * 0.3)
+      ..quadraticBezierTo(b.dx + bs * 0.4, b.dy - bs * 1.2, b.dx - bs * 0.4, b.dy - bs * 0.8)
+      ..close();
+    canvas.drawPath(body.shift(const Offset(1.2, 1.2)), Paint()..color = NatureColors.sunOchre.withValues(alpha: 0.7));
+    canvas.drawPath(body, Paint()..color = NatureColors.ink);
+    canvas.drawCircle(b + Offset(bs * 0.75, -bs * 0.75), bs * 0.45, Paint()..color = NatureColors.ink);
+    canvas.drawPath(
+        Path()
+          ..moveTo(b.dx + bs * 1.15, b.dy - bs * 0.8)
+          ..lineTo(b.dx + bs * 1.6, b.dy - bs * 0.7)
+          ..lineTo(b.dx + bs * 1.15, b.dy - bs * 0.6),
+        Paint()..color = NatureColors.ochreInk);
+    // Song: three soft arcs, carved like woodcut lines.
+    final song = Paint()
+      ..color = NatureColors.skyInk.withValues(alpha: 0.55)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+    final head = b + Offset(bs * 1.7, -bs * 0.75);
+    for (var i = 1; i <= 3; i++) {
+      canvas.drawArc(Rect.fromCircle(center: head, radius: bs * 0.9 * i), -0.6, 1.2, false, song);
+    }
+
+    // Rings on the water below the reed: the only "sound" in the picture.
+    final ring = Paint()
+      ..color = NatureColors.paper.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final rc = Offset(rx + 4, shore + (h - shore) * 0.45);
+    for (var i = 1; i <= 4; i++) {
+      canvas.drawOval(Rect.fromCenter(center: rc, width: 26.0 * i, height: 7.0 * i), ring);
+    }
+
+    if (tornBottom) _tear(canvas, size, 31);
+  }
+
+  @override
+  bool shouldRepaint(_EchoPainter old) => old.tornBottom != tornBottom;
+}
+
+// ---- Activity: a trail over rolling ground (Phase 4) ------------------------------------
+class TrailBand extends StatelessWidget {
+  final bool tornBottom;
+  const TrailBand({super.key, this.tornBottom = false});
+
+  @override
+  Widget build(BuildContext context) => _band(_TrailPainter(tornBottom));
+}
+
+class _TrailPainter extends CustomPainter {
+  final bool tornBottom;
+  const _TrailPainter(this.tornBottom);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    canvas.drawRect(
+        Offset.zero & size,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [NatureColors.skyHigh, NatureColors.cream],
+          ).createShader(Offset.zero & size));
+
+    // Distant peaks with sunlit faces.
+    final peaks = Path()..moveTo(0, h * 0.5);
+    final rp = math.Random(61);
+    final n = (w / 140).clamp(3, 10).round();
+    for (var i = 0; i <= n; i++) {
+      final x = w * i / n;
+      final top = h * (0.18 + rp.nextDouble() * 0.14);
+      peaks.lineTo(x - w / n * 0.5, top);
+      peaks.lineTo(x, h * (0.38 + rp.nextDouble() * 0.06));
+    }
+    peaks
+      ..lineTo(w, h * 0.5)
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(peaks, Paint()..color = NatureColors.mistRange);
+    canvas.drawPath(
+        peaks,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = NatureColors.sunlitRock.withValues(alpha: 0.8));
+
+    _ridge(canvas, size, seed: 72, base: h * 0.62, amp: h * 0.12, color: NatureColors.eucalyptus, step: 0.16);
+    _ridge(canvas, size, seed: 5, base: h * 0.8, amp: h * 0.12, color: NatureColors.meadow, step: 0.22);
+
+    // A stream across the foreground with stepping stones.
+    final sy = h * (tornBottom ? 0.84 : 0.88);
+    final stream = Path()..moveTo(0, sy);
+    stream.cubicTo(w * 0.3, sy - 10, w * 0.55, sy + 12, w, sy - 4);
+    stream.lineTo(w, sy + 12);
+    stream.cubicTo(w * 0.55, sy + 26, w * 0.3, sy + 4, 0, sy + 14);
+    stream.close();
+    canvas.drawPath(stream, Paint()..color = NatureColors.riverBlue.withValues(alpha: 0.8));
+
+    // The trail: a dashed path climbing from the lower left to a signpost.
+    final post = Offset(w * (w > 900 ? 0.82 : 0.76), h * 0.6);
+    final trail = Path()
+      ..moveTo(w * 0.08, h + 4)
+      ..cubicTo(w * 0.3, h * 0.82, w * 0.2, h * 0.72, w * 0.46, h * 0.7)
+      ..cubicTo(w * 0.62, h * 0.69, post.dx - w * 0.1, post.dy + h * 0.06, post.dx, post.dy + 4);
+    final metrics = trail.computeMetrics().first;
+    final dash = Paint()
+      ..color = NatureColors.paper
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    for (var d = 0.0; d < metrics.length; d += 14) {
+      final a = metrics.getTangentForOffset(d)!.position;
+      final bb = metrics.getTangentForOffset(math.min(d + 7, metrics.length))!.position;
+      canvas.drawLine(a, bb, dash);
+    }
+    // Stepping stones where the trail crosses the stream.
+    final stone = Paint()..color = NatureColors.borderStrong;
+    for (var i = 0; i < 3; i++) {
+      canvas.drawOval(Rect.fromCenter(center: Offset(w * 0.1 + i * 13.0, sy + 6 - i * 2), width: 11, height: 5), stone);
+    }
+
+    // Signpost.
+    final postPaint = Paint()
+      ..color = NatureColors.forestDeep
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+    final ps = math.min(h * 0.12, 30.0);
+    canvas.drawLine(post, post - Offset(0, ps), postPaint);
+    final sign = Path()
+      ..moveTo(post.dx, post.dy - ps * 0.95)
+      ..lineTo(post.dx + ps * 0.7, post.dy - ps * 0.95)
+      ..lineTo(post.dx + ps * 0.9, post.dy - ps * 0.8)
+      ..lineTo(post.dx + ps * 0.7, post.dy - ps * 0.65)
+      ..lineTo(post.dx, post.dy - ps * 0.65)
+      ..close();
+    canvas.drawPath(sign.shift(const Offset(1.2, 1.2)), Paint()..color = NatureColors.sunOchre);
+    canvas.drawPath(sign, Paint()..color = NatureColors.paper);
+    canvas.drawPath(
+        sign,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = NatureColors.forestDeep);
+
+    // Wildflowers along the way.
+    final rf = math.Random(9);
+    for (var i = 0; i < (w / 30).clamp(8, 40).round(); i++) {
+      final p = Offset(rf.nextDouble() * w, h * (0.72 + rf.nextDouble() * 0.12));
+      canvas.drawCircle(p, 1.8 + rf.nextDouble(),
+          Paint()..color = (i % 3 == 0 ? NatureColors.sunOchre : NatureColors.dustyCoral).withValues(alpha: 0.9));
+    }
+
+    if (tornBottom) _tear(canvas, size, 37);
+  }
+
+  @override
+  bool shouldRepaint(_TrailPainter old) => old.tornBottom != tornBottom;
 }

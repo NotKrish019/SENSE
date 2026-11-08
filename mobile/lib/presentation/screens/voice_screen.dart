@@ -1,272 +1,204 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
-import '../widgets/sense_tappable.dart';
-import '../widgets/sample_data_banner.dart';
-import '../widgets/sense_button.dart';
-import '../widgets/sense_card.dart';
-import '../widgets/sense_navigation.dart';
 
+import '../../core/state/consent_preferences.dart';
+import '../../core/theme/nature_tokens.dart';
+import '../nature/input_bands.dart';
+import '../nature/nature_inputs.dart';
+import '../nature/nature_widgets.dart';
+import 'consent_screen.dart';
+
+/// Production Voice (Living Landscapes, Phase 4).
+///
+/// Voice is PLANNED, NOT BUILT. This page explains what a voice check-in
+/// would involve and states plainly that it is not available: there is no
+/// recording control, the microphone is never used, no microphone permission
+/// is requested, and nothing is recorded, analysed or saved.
+///
+/// Until Phase 4 this screen had a demonstration "record" button with a
+/// three-second timer and decorative bars. It recorded nothing, but it looked
+/// like a working recorder, so it was removed: an explicit unavailable state
+/// replaces it.
+///
+/// The only control on the page besides Back opens the existing data and
+/// consent preferences (the same in-memory [ConsentPreferences] as onboarding).
 class VoiceScreen extends StatefulWidget {
   const VoiceScreen({super.key});
+
+  /// The suggested prompt a voice check-in would use (unchanged wording).
+  static const String suggestedPrompt =
+      'Describe three neutral tasks you accomplished today and how rested you feel.';
 
   @override
   State<VoiceScreen> createState() => _VoiceScreenState();
 }
 
 class _VoiceScreenState extends State<VoiceScreen> {
-  bool _isRecording = false;
-  int _recordingSeconds = 0;
-  bool _hasSampleRecorded = false;
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SenseColors.background,
-      appBar: const SenseAppBar(title: 'Voice Check-in (Optional)'),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: SenseSpacing.screenHorizontal,
-            vertical: 16.0,
-          ),
+    return Theme(
+      data: NatureTheme.light,
+      child: Scaffold(
+        backgroundColor: NatureColors.background,
+        body: NatureJournalPage(
+          controller: _scroll,
+          onBack: () => Navigator.of(context).maybePop(),
+          backLabel: 'Back',
+          band: (desktop) => EchoBand(tornBottom: desktop),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // The microphone is never used in this prototype: say so first.
-              const SenseSampleDataBanner(
-                title: 'Prototype — no audio is recorded',
-                message:
-                    'The microphone is not used. The button below only demonstrates '
-                    'the planned interface; nothing is recorded, analysed or saved.',
-              ),
+              const Text('Voice · optional', style: NatureType.eyebrow),
+              const SizedBox(height: 8),
+              const NatureHeading('Voice check-in'),
               const SizedBox(height: 16),
-              // Research Rationale & Permission Card
-              SenseCard(
-                color: SenseColors.surface,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.mic_none_rounded, color: SenseColors.blue600, size: 22),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Experimental voice features (planned)',
-                            style: SenseTypography.labelBold.copyWith(
-                              color: SenseColors.navy900,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'SENSE plans to study whether experimental acoustic features, such as '
-                      'pitch variability, speaking rate and pause length, change alongside '
-                      'self-reported stress. They are research measures, not validated '
-                      'indicators of stress or emotion. Voice input is entirely optional.',
-                      style: SenseTypography.caption.copyWith(
-                        color: SenseColors.textSecondary,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
+              const NatureStatusPanel(
+                status: 'Planned · not built',
+                title: 'Not available in this prototype',
+                body: 'There is no recording control. The microphone is never used and no '
+                    'microphone permission is requested. Nothing is recorded, analysed or saved.',
+                icon: Icons.mic_off_outlined,
+              ),
+              const SizedBox(height: 28),
+              const _Section(
+                title: 'What voice could add',
+                body: 'SENSE plans to study whether experimental acoustic features, such as pitch '
+                    'variability, speaking rate and pause length, change alongside self-reported '
+                    'stress. They are research measures, not validated indicators of stress or '
+                    'emotion. Voice input is entirely optional.',
+              ),
+              const SizedBox(height: 28),
+              Semantics(
+                header: true,
+                child: const Text('What a voice check-in would involve', style: NatureType.sectionTitle),
+              ),
+              const SizedBox(height: 4),
+              const Text('Planned design, not yet built.', style: NatureType.bodyMuted),
+              const SizedBox(height: 14),
+              const _PlannedStep(
+                number: 1,
+                text: 'You would choose to start. Recording would begin only when you tap; there '
+                    'would be no background listening.',
+              ),
+              const _PlannedStep(
+                number: 2,
+                text: 'You would answer a short, neutral prompt, for example:',
+                quote: VoiceScreen.suggestedPrompt,
+              ),
+              const _PlannedStep(
+                number: 3,
+                text: 'The audio would be converted on the device to acoustic features, and the '
+                    'recording then deleted.',
+              ),
+              const SizedBox(height: 14),
+              const SprigRule(),
+              const SizedBox(height: 22),
+              Semantics(
+                header: true,
+                child: const Text('Your choice about voice', style: NatureType.sectionTitle),
+              ),
+              const SizedBox(height: 6),
+              ListenableBuilder(
+                listenable: ConsentPreferences.instance,
+                builder: (context, _) {
+                  final on = ConsentPreferences.instance.isEnabled(InputModality.voice);
+                  return Text(
+                    on
+                        ? 'Voice is on in your preferences (not saved). This only notes your '
+                            'interest; it does not start any recording.'
+                        : 'Voice is off in your preferences (not saved). Turning it on only notes '
+                            'your interest; it does not start any recording.',
+                    style: NatureType.body,
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+              NatureTextLink(
+                label: 'Review data and consent preferences',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ConsentScreen(isSettingsMode: true)),
                 ),
               ),
-              const SizedBox(height: 20),
-
-              // Strict Privacy & Boundary Notice
-              SenseCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.shield_outlined, color: SenseColors.blue800, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Privacy design (planned)',
-                            style: SenseTypography.labelBold.copyWith(
-                              color: SenseColors.navy900,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '• No background listening: recording would start only when you tap.\n'
-                            '• In this prototype the microphone is never used.\n'
-                            '• Planned, not yet built: audio would be converted on the device to '
-                            'acoustic features and the recording then deleted.',
-                            style: SenseTypography.caption.copyWith(
-                              color: SenseColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Recording Surface
-              Center(
-                child: Column(
-                  children: [
-                    Text(
-                      _isRecording
-                          ? 'Demo running — not recording (00:0$_recordingSeconds)'
-                          : _hasSampleRecorded
-                              ? 'Demo finished — no audio was recorded'
-                              : 'Tap to see the planned recording interface',
-                      style: SenseTypography.labelBold.copyWith(
-                        color: _isRecording ? SenseColors.blue800 : SenseColors.navy900,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Mic Action Button (icon-only, so it carries an explicit
-                    // label that also states no audio is recorded)
-                    SenseTappable(
-                      semanticLabel: _isRecording
-                          ? 'Stop demo. No audio is being recorded.'
-                          : 'Start demo of the planned recording screen. No audio is recorded.',
-                      onTap: _toggleRecording,
-                      circle: true,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: _isRecording
-                              ? const LinearGradient(colors: [SenseColors.danger, Color(0xFF881337)])
-                              : SenseColors.primaryActionGradient,
-                          boxShadow: [
-                            BoxShadow(
-                              color: _isRecording
-                                  ? const Color(0x66B42332)
-                                  : const Color(0x40059BE0),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                          color: SenseColors.white,
-                          size: 40,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Decorative bars only (no audio input) — demo of the planned UI
-                    if (_isRecording)
-                      SizedBox(
-                        height: 40,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(18, (i) {
-                            final h = (10 + (i % 5) * 6).toDouble();
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              width: 3.5,
-                              height: h,
-                              decoration: BoxDecoration(
-                                color: SenseColors.cyan500,
-                                borderRadius: SenseRadii.pillBorder,
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // Action Buttons
-              if (_hasSampleRecorded) ...[
-                SenseButton(
-                  label: 'Finish demo',
-                  icon: Icons.check_rounded,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Demo only: no audio was recorded, no features were '
-                            'extracted, and nothing was saved.'),
-                        backgroundColor: SenseColors.navy900,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                SenseButton(
-                  label: 'Reset demo',
-                  variant: SenseButtonVariant.secondary,
-                  onPressed: () => setState(() {
-                    _hasSampleRecorded = false;
-                    _recordingSeconds = 0;
-                  }),
-                ),
-              ] else ...[
-                SenseCard(
-                  color: SenseColors.surface,
-                  child: Text(
-                    'Suggested Prompt: "Describe three neutral tasks you accomplished today and how rested you feel."',
-                    style: SenseTypography.caption.copyWith(
-                      color: SenseColors.textSecondary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 22),
+              NatureQuietButton(label: 'Back', onTap: () => Navigator.of(context).maybePop()),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  void _toggleRecording() {
-    if (_isRecording) {
-      setState(() {
-        _isRecording = false;
-        _hasSampleRecorded = true;
-      });
-    } else {
-      setState(() {
-        _isRecording = true;
-        _recordingSeconds = 0;
-        _hasSampleRecorded = false;
-      });
-      // Demo timer only: no microphone access, no audio captured.
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted && _isRecording) setState(() => _recordingSeconds = 1);
-      });
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted && _isRecording) setState(() => _recordingSeconds = 2);
-      });
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted && _isRecording) {
-          setState(() {
-            _recordingSeconds = 3;
-            _isRecording = false;
-            _hasSampleRecorded = true;
-          });
-        }
-      });
-    }
+class _Section extends StatelessWidget {
+  final String title;
+  final String body;
+  const _Section({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(header: true, child: Text(title, style: NatureType.sectionTitle)),
+        const SizedBox(height: 6),
+        Text(body, style: NatureType.body),
+      ],
+    );
   }
 }
 
+/// One step of the planned design: a numeral and text, no control.
+class _PlannedStep extends StatelessWidget {
+  final int number;
+  final String text;
+  final String? quote;
+  const _PlannedStep({required this.number, required this.text, this.quote});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: LayoutBuilder(builder: (context, c) {
+        // The quote sits under the step text; on narrow screens with large
+        // text it uses the full width so its words never break.
+        final indent = c.maxWidth >= 300 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4) ? 46.0 : 0.0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                NatureStepNumeral(number: number, accent: NatureColors.skyInk),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(text, style: NatureType.body),
+                  ),
+                ),
+              ],
+            ),
+            if (quote != null)
+              Padding(
+                padding: EdgeInsets.only(left: indent, top: 8),
+                child: Container(
+                  padding: const EdgeInsets.only(left: 12),
+                  decoration: const BoxDecoration(
+                    border: Border(left: BorderSide(color: NatureColors.skyTeal, width: 3)),
+                  ),
+                  child: Text('"$quote"', style: NatureType.body.copyWith(fontWeight: FontWeight.w500)),
+                ),
+              ),
+          ],
+        );
+      }),
+    );
+  }
+}

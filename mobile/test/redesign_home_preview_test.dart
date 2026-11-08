@@ -104,7 +104,7 @@ void main() {
       expect(find.textContaining('not based on your data'), findsOneWidget);
       expect(find.textContaining('does not mean one caused the other'), findsOneWidget);
       expect(find.text('Write freely · not saved yet'), findsOneWidget);
-      expect(find.text('Planned · demo only, no audio recorded'), findsOneWidget);
+      expect(find.text('Planned · not built, no audio recorded'), findsOneWidget);
       expect(find.text('Manual entry · no health app connected'), findsOneWidget);
       expect(find.textContaining(RegExp(r'\d+\s?%')), findsNothing, reason: 'no invented scores');
     });

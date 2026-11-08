@@ -82,15 +82,12 @@ void main() {
         await scrollThrough(tester);
       });
 
-      testWidgets('Voice after the demo (status + buttons) fits at $cfg', (tester) async {
+      // Phase 4: the simulated recording demo was removed (it looked like a
+      // working recorder). Voice now states that it is not available.
+      testWidgets('Voice (not-available state, no recording control) fits at $cfg', (tester) async {
         await pumpScreen(tester, const VoiceScreen(), width: width, scale: scale);
-        final mic = find.byIcon(Icons.mic_rounded);
-        await tester.ensureVisible(mic);
-        await tester.pumpAndSettle();
-        await tester.tap(mic);
-        await tester.pump(const Duration(seconds: 4));
-        await tester.pumpAndSettle();
-        expect(find.text('Demo finished — no audio was recorded'), findsOneWidget);
+        expect(find.text('Not available in this prototype'), findsOneWidget);
+        expect(find.byIcon(Icons.mic_rounded), findsNothing);
         await scrollThrough(tester);
       });
     }
@@ -126,13 +123,15 @@ void main() {
       expect(find.byTooltip('One more deadline'), findsOneWidget);
     });
 
-    testWidgets('Voice demo button says that no audio is recorded', (tester) async {
+    testWidgets('Voice says no audio is recorded and offers no recording control', (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, const VoiceScreen());
       expect(
-        find.bySemanticsLabel(RegExp('Start demo .*No audio is recorded')),
+        find.bySemanticsLabel(RegExp(r'^Planned · not built\. Not available in this prototype\. '
+            r'There is no recording control\.')),
         findsOneWidget,
       );
+      expect(find.bySemanticsLabel(RegExp('(Start|Stop) demo')), findsNothing);
       handle.dispose();
     });
 
@@ -148,13 +147,16 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('Health Connect switch is announced as unavailable, and stays off',
+    // Phase 4: the always-off switch was replaced by an explicit status, so
+    // nothing on the page looks like it could connect Health Connect.
+    testWidgets('Health Connect is announced as not connected, with no switch to operate',
         (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, const ActivityScreen());
-      final sw = find.bySemanticsLabel(RegExp('Health Connect sync, not available'));
-      expect(sw, findsOneWidget);
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      expect(
+          find.bySemanticsLabel('Health Connect: Not connected · not available in this prototype'),
+          findsOneWidget);
+      expect(find.byType(Switch), findsNothing);
       handle.dispose();
     });
   });

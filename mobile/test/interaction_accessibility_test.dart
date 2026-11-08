@@ -361,15 +361,14 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('Voice demo button activates via semantics tap; still says no audio',
-        (tester) async {
+    // Phase 4: the simulated recording demo was removed; the page's only
+    // control besides Back opens the consent preferences.
+    testWidgets('Voice consent link activates via semantics tap', (tester) async {
       final handle = tester.ensureSemantics();
-      await pump(tester, const VoiceScreen());
-      tester.semantics.tap(find.semantics.byLabel(RegExp('^Start demo .*No audio is recorded')));
-      await tester.pump();
-      expect(find.bySemanticsLabel('Stop demo. No audio is being recorded.'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 4));
+      await pump(tester, const VoiceScreen(), height: 3000);
+      tester.semantics.tap(find.semantics.byLabel('Review data and consent preferences'));
       await tester.pumpAndSettle();
+      expect(find.byType(ConsentScreen), findsOneWidget);
       handle.dispose();
     });
   });

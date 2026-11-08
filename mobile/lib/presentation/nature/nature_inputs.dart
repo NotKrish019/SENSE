@@ -345,3 +345,82 @@ Future<bool> showNatureConfirmDialog(
   );
   return result ?? false;
 }
+
+/// An explicit availability statement (Phase 4): what works today and what
+/// does not. The status is carried by the words (eyebrow and title), never
+/// by colour or the icon alone, and the panel is read as one sentence.
+class NatureStatusPanel extends StatelessWidget {
+  /// Short status, e.g. "Planned · not built".
+  final String status;
+  final String title;
+  final String body;
+  final IconData icon;
+
+  /// Margin-rule colour (decorative).
+  final Color accent;
+
+  const NatureStatusPanel({
+    super.key,
+    required this.status,
+    required this.title,
+    required this.body,
+    required this.icon,
+    this.accent = NatureColors.ochreInk,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: '$status. $title. $body',
+      child: ExcludeSemantics(
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: NatureColors.paper,
+            borderRadius: NatureRadii.mdBorder,
+            border: Border.all(color: NatureColors.border),
+          ),
+          child: ClipRRect(
+            borderRadius: NatureRadii.mdBorder,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(width: 4, color: accent),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Icon(icon, size: 24, color: accent),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(status, style: NatureType.eyebrow.copyWith(color: NatureColors.ochreInk)),
+                                const SizedBox(height: 2),
+                                Text(title, style: NatureType.sectionTitle.copyWith(fontSize: 17)),
+                                const SizedBox(height: 4),
+                                Text(body, style: NatureType.body),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
