@@ -9,6 +9,21 @@ import '../models/user_baseline_record.dart';
 
 /// Database Helper managing local SQLite relational tables.
 /// Adheres strictly to the MindPulse Phase 0 Data Dictionary and DPDP Act 2023 data rights.
+///
+/// DEPRECATED (ADR-009, 2026-11-08): this is the legacy schema v1. It was
+/// never called by the app, seeds four consent preferences ON (preferences
+/// must start OFF), has no migrations, and its `raw_text_encrypted` column is
+/// not encrypted. Use `lib/data/local/` (schema v2) instead, which preserves
+/// any v1 tables as `legacy_v1_*`.
+///
+/// Do NOT use this helper with the v2 schema. It opens with `version: 1` and
+/// no downgrade handler, so opening a v2 database through it does not fail:
+/// sqflite silently sets the stored schema version back to 1. In a 2026-11-08
+/// scratch-copy probe the v2 records survived, but the next v2 open treated
+/// the file as v1 and ran the v1 -> v2 migration again, adding a redundant
+/// `migration_log` entry. By inspection, its v1 queries also do not match the
+/// v2 table columns.
+@Deprecated('Legacy schema v1; use lib/data/local (ADR-009). Do not call.')
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;

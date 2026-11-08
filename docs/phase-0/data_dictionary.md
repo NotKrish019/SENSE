@@ -154,3 +154,25 @@ This document defines the formal relational schemas, data types, value ranges, e
 | `explanation_narrative` | Text | Formatted Markdown | No | Human-readable factor-attributed explanation string. |
 | `uncertainty_score` | Float | 0.0 to 1.0 | No | Epistemic uncertainty based on missing modality ratio. |
 
+---
+
+## Amendment (2026-11-08): App-level schema v2 per ADR-009 (M0)
+
+The tables above are preserved as the Phase 0 research definition. The Flutter app's local schema v2 (`mobile/lib/data/local/schema.dart`) follows ADR-009, which differs as follows. Where they differ, ADR-009 governs the app.
+
+| Topic | Phase 0 definition above | App schema v2 (ADR-009) |
+| :--- | :--- | :--- |
+| M1 mood | `mood_valence` and `mood_arousal` (1 to 5) | One ordinal `mood_rating` 1 to 5; not mapped to valence or arousal (A) |
+| M1 motivation | `motivation_level` (nullable) | `motivation_energy_rating` 1 to 5, one combined item (A) |
+| M1 latency, session type | `completion_latency_sec`, `session_type` | Not collected by the screen; not stored |
+| Provenance | Not defined | `changed_fields`, `default_fields`, `submitted_at_utc`, `explicitly_submitted` on every daily record (B) |
+| M2 journal | `raw_text_encrypted` and lexical features | Not persisted at all until encryption and its lifecycle are verified (F) |
+| M3 duration | `total_sleep_minutes` 0 to 1440 | `duration_minutes` 240 to 720 in 30-minute steps, never derived from the times (C) |
+| M3 times | `bedtime_utc`, `wake_time_utc` | `bedtime_local`, `wake_time_local` as `HH:MM` local wall-clock (C, H) |
+| M4 | `tasks_completed_count` 0 to 50 | Not collected by the screen; not stored. `deadlines_48h` 0 to 20 kept (D) |
+| M6 steps | `daily_step_count` 0 to 100,000 | `steps` 1,000 to 20,000 on a 500 grid, plus the untouched default 6,800 (E) |
+| M6 active minutes | `active_minutes` 0 to 1440 | `active_minutes` 0 to 120 in steps of 5 (E) |
+| Identity | `user_id` | `local_person_id`, a device-local pseudonymous UUID (H) |
+| Dates | `date_epoch` | `local_date` `YYYY-MM-DD` plus `tz_offset_minutes` (H) |
+| Inference | `composite_deviation_score`, `shift_alert_triggered` | Not stored; only descriptive per-variable `observations` (L, M) |
+
