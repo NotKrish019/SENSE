@@ -30,6 +30,16 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // On-device tests of the Keystore key manager (src/androidTest).
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // BuildConfig.BUILD_TYPE feeds the explicit production-eligibility policy
+    // (security/BuildPolicy.kt): only a non-debuggable "release" build may open
+    // the participant database; "profile" (debuggable, initWith(debug)) may not.
+    buildFeatures {
+        buildConfig = true
     }
 
     // Release signing is intentionally NOT configured. Release builds are
@@ -44,4 +54,13 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Instrumented tests only (src/androidTest); never packaged in the app.
+    // Aligned with the androidx.test 1.3.0 line that the integration_test dev
+    // plugin already puts on the debug classpath (Gradle consistent resolution).
+    // Only the runner (plain JUnit4 tests): androidx.test:core 1.3.0 predates
+    // the Android 12 android:exported rule and cannot merge at targetSdk 36.
+    androidTestImplementation("androidx.test:runner:1.3.0")
 }

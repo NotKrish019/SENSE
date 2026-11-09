@@ -1,8 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Backup policy (Milestone J hardening, M3): no app data leaves the device.
+         allowBackup="false" disables cloud backup (and adb backup); for Android 12+
+         dataExtractionRules also excludes every domain from device-to-device
+         transfer, which allowBackup="false" alone does not; fullBackupContent
+         covers Android 11 and earlier. See res/xml/. -->
     <application
         android:label="SENSE"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/full_backup_content"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

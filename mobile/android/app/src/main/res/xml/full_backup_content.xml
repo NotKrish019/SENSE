@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SENSE backup policy, Android 11 (API 30) and earlier (Milestone J hardening, M3).
+
+  Used only if backup is ever enabled on those releases: the manifest sets
+  android:allowBackup="false", and every storage domain is excluded here as a
+  second line of defence, including storage added in the future. See
+  data_extraction_rules.xml for Android 12 and later.
+-->
+<full-backup-content>
+    <exclude domain="root" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="external" path="." />
+    <exclude domain="device_root" path="." />
+    <exclude domain="device_file" path="." />
+    <exclude domain="device_database" path="." />
+    <exclude domain="device_sharedpref" path="." />
+    <!-- Explicit, although already covered by domain="database" path="." above:
+         the legacy plaintext database and its sidecar files. -->
+    <exclude domain="database" path="mindpulse_secure.db" />
+    <exclude domain="database" path="mindpulse_secure.db-journal" />
+    <exclude domain="database" path="mindpulse_secure.db-wal" />
+    <exclude domain="database" path="mindpulse_secure.db-shm" />
+</full-backup-content>

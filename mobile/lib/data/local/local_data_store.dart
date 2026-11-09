@@ -36,16 +36,19 @@ class SenseDatabase {
     required DatabaseFactory factory,
     required String path,
     UtcClock? clock,
-  }) {
+  }) =>
+      factory.openDatabase(path, options: options(clock: clock));
+
+  /// The schema version, configuration, creation and migration callbacks used
+  /// by [open]. The encrypted (SQLCipher) opener reuses exactly these, so both
+  /// paths share one schema definition (Milestone J).
+  static OpenDatabaseOptions options({UtcClock? clock}) {
     final now = clock ?? () => DateTime.now().toUtc();
-    return factory.openDatabase(
-      path,
-      options: OpenDatabaseOptions(
-        version: kSchemaVersion,
-        onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
-        onCreate: (db, version) => SenseSchema.create(db, now()),
-        onUpgrade: (db, oldVersion, newVersion) => SenseSchema.upgrade(db, oldVersion, newVersion, now()),
-      ),
+    return OpenDatabaseOptions(
+      version: kSchemaVersion,
+      onConfigure: (db) => db.execute('PRAGMA foreign_keys = ON'),
+      onCreate: (db, version) => SenseSchema.create(db, now()),
+      onUpgrade: (db, oldVersion, newVersion) => SenseSchema.upgrade(db, oldVersion, newVersion, now()),
     );
   }
 }

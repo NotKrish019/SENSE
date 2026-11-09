@@ -614,9 +614,13 @@ void main() {
       expect(src, contains('That is logical database erasure'));
       expect(src, contains('cryptographic erasure.'));
       final pubspec = read('pubspec.yaml');
-      for (final pkg in ['http:', 'dio:', 'share_plus:', 'path_provider:', 'sqlcipher']) {
+      for (final pkg in ['http:', 'dio:', 'share_plus:', 'path_provider:']) {
         expect(pubspec, isNot(contains(pkg)), reason: pkg);
       }
+      // Milestone J adds exactly one SQLCipher driver, pinned exactly. The
+      // service itself stays engine-agnostic and makes no encryption claim.
+      expect(RegExp(r'^\s+\w*sqlcipher\w*:.*$', multiLine: true).allMatches(pubspec).map((m) => m[0]!.trim()),
+          ['sqflite_sqlcipher: 3.4.1']);
     });
   });
 }

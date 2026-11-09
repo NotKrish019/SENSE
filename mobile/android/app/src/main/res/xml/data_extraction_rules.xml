@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SENSE backup policy, Android 12 (API 31) and later (Milestone J hardening, M3).
+
+  Nothing leaves the device: every storage domain is excluded from cloud backup
+  AND from device-to-device transfer, so storage added in the future is
+  excluded by default. android:allowBackup="false" alone would NOT stop
+  device-to-device transfer for apps targeting API 31+; these rules do.
+
+  noBackupFilesDir (the encrypted database and key envelope) and the cache
+  directories are outside every domain. The Keystore wrapping key never leaves
+  the device's secure hardware in any case.
+
+  Static configuration only. Physical-device verification with
+  `adb shell bmgr` and a device-to-device transfer is still outstanding
+  (docs/architecture/encrypted_local_storage.md).
+-->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+        <!-- Explicit, although already covered by domain="database" path="." above:
+             the legacy plaintext database and its sidecar files. -->
+        <exclude domain="database" path="mindpulse_secure.db" />
+        <exclude domain="database" path="mindpulse_secure.db-journal" />
+        <exclude domain="database" path="mindpulse_secure.db-wal" />
+        <exclude domain="database" path="mindpulse_secure.db-shm" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+        <!-- Explicit, although already covered by domain="database" path="." above:
+             the legacy plaintext database and its sidecar files. -->
+        <exclude domain="database" path="mindpulse_secure.db" />
+        <exclude domain="database" path="mindpulse_secure.db-journal" />
+        <exclude domain="database" path="mindpulse_secure.db-wal" />
+        <exclude domain="database" path="mindpulse_secure.db-shm" />
+    </device-transfer>
+</data-extraction-rules>

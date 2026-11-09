@@ -468,9 +468,13 @@ void main() {
             reason: f.path);
       }
       final pubspec = read('pubspec.yaml');
-      for (final pkg in ['health:', 'record:', 'speech_to_text:', 'sqlcipher', 'flutter_secure_storage:']) {
+      for (final pkg in ['health:', 'record:', 'speech_to_text:', 'flutter_secure_storage:']) {
         expect(pubspec, isNot(contains(pkg)), reason: pkg);
       }
+      // Milestone J adds exactly one SQLCipher driver, pinned exactly (see
+      // docs/architecture/encrypted_local_storage.md). No other is allowed.
+      expect(RegExp(r'^\s+\w*sqlcipher\w*:.*$', multiLine: true).allMatches(pubspec).map((m) => m[0]!.trim()),
+          ['sqflite_sqlcipher: 3.4.1']);
     });
 
     test('the production consent model stays in memory, starts OFF and is not wired to SQLite', () {

@@ -14,9 +14,18 @@ dependencies:
   uuid: ^4.3.3
   intl: ^0.19.0
   crypto: ^3.0.3
+  # Encrypted local database (Milestone J). Pinned EXACTLY: the pub.dev
+  # publisher is unverified, so the version and archive hash (pubspec.lock)
+  # were audited. Its Android engine is forced to the official SQLCipher for
+  # Android 4.20.0 in android/build.gradle.kts. See
+  # docs/architecture/encrypted_local_storage.md.
+  sqflite_sqlcipher: 3.4.1
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  # On-device tests for the Keystore + SQLCipher lifecycle (integration_test/).
+  integration_test:
     sdk: flutter
   flutter_lints: ^3.0.0
   test: ^1.31.1
