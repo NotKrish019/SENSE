@@ -159,16 +159,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Data & consent preferences: one shared, in-memory source of truth
-  // (ConsentPreferences), reviewed on the same screen as onboarding.
+  // Data & consent preferences: one shared source of truth
+  // (ConsentPreferences, in memory unless storage is ready), reviewed on the
+  // same screen as onboarding.
   Widget _consent(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const NatureSectionHeading(
           'Data & consent',
-          lede: 'Each input is optional. In this prototype your choices are kept only while '
-              'the app is open, are not saved, and do not start any data collection.',
+          lede: 'Each input is optional, and your choices do not start any data collection. '
+              'Below it says whether they are saved.',
         ),
         const SizedBox(height: 12),
         ListenableBuilder(
@@ -176,13 +177,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           builder: (context, _) {
             final prefs = ConsentPreferences.instance;
             final on = InputModality.values.where(prefs.isEnabled).toList();
+            final note = prefs.savedStateNote;
             return NatureIndex(rows: [
               NatureIndexRow(
                 icon: Icons.fact_check_outlined,
                 title: 'Review data and consent preferences',
                 detail: on.isEmpty
-                    ? 'Currently on: none (not saved)'
-                    : 'Currently on: ${on.map((m) => '${m.code} ${m.title}').join(', ')} (not saved)',
+                    ? 'Currently on: none ($note)'
+                    : 'Currently on: ${on.map((m) => '${m.code} ${m.title}').join(', ')} ($note)',
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const ConsentScreen(isSettingsMode: true)),
                 ),

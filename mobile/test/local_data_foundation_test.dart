@@ -5,6 +5,8 @@ import 'package:mindpulse/data/local/local_data_store.dart';
 import 'package:mindpulse/data/local/schema.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'support/dart_source_guard.dart';
+
 /// Milestone A: the local data foundation (schema v2, migrations, typed
 /// records, repositories). Disposable SQLite files only; nothing here is
 /// connected to the app, and the database is NOT encrypted.
@@ -643,17 +645,40 @@ void main() {
       final files = Directory('lib/data/local').listSync().whereType<File>().toList();
       expect(files.map((f) => f.uri.pathSegments.last),
           containsAll(['records.dart', 'schema.dart', 'repositories.dart', 'sqlite_repositories.dart', 'local_data_store.dart']));
+      // Directives are parsed (any quoting, export and part, conditional URIs).
+      final lib = parseDartTree('lib');
       for (final f in files) {
         final src = f.readAsStringSync();
-        expect(src, isNot(contains('package:flutter/')), reason: f.path);
+        final path = f.path.replaceAll('\\', '/');
+        final flutter = lib[path]!.uris.where((u) => u.startsWith('package:flutter/')).toList();
+        if (path == 'lib/data/local/sense_storage.dart') {
+          // Milestone K1: the app-facing storage owner is the one Flutter-aware
+          // file, and it may use foundation (ChangeNotifier) only.
+          expect(flutter, ['package:flutter/foundation.dart'], reason: path);
+        } else {
+          expect(flutter, isEmpty, reason: path);
+        }
         expect(RegExp(r"insert\(\s*'journal").hasMatch(src), isFalse, reason: f.path);
       }
-      final appFiles = Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart') && !f.path.contains('lib/data/'));
+      // Milestone K1: only the app entry point, the consent model and the
+      // storage scope may reach the data layer, and only through the storage
+      // owner (never the repositories, schema or database helpers directly).
+      const allowed = {
+        'lib/main.dart',
+        'lib/core/state/consent_preferences.dart',
+        'lib/presentation/widgets/sense_storage_scope.dart',
+      };
+      final appFiles = lib.values.where((f) => !f.path.startsWith('lib/data/')).toList();
+      expect(appFiles.map((f) => f.path), containsAll(allowed));
       for (final f in appFiles) {
-        expect(f.readAsStringSync(), isNot(contains('data/local/')), reason: '${f.path} must not use the data layer yet');
+        // Relative and package:mindpulse/ URIs, resolved to project paths.
+        final data = f.directives.where((d) => d.projectPath?.startsWith('lib/data/') ?? false).toList();
+        if (allowed.contains(f.path)) {
+          expect(data.map((d) => '${d.kind.name} ${d.projectPath}'), everyElement('import lib/data/local/sense_storage.dart'),
+              reason: f.path);
+        } else {
+          expect(data, isEmpty, reason: '${f.path} must not use the data layer');
+        }
       }
     });
   });

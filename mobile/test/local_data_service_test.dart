@@ -581,7 +581,15 @@ void main() {
       for (final f in appFiles) {
         final src = f.readAsStringSync();
         expect(src, isNot(contains('LocalDataService')), reason: f.path);
-        expect(src, isNot(contains('data/local/')), reason: f.path);
+        expect(src, isNot(contains('local_data_service')), reason: f.path);
+        expect(src, isNot(contains('exportAllUserData')), reason: f.path);
+        expect(src, isNot(contains('eraseAllUserData')), reason: f.path);
+        expect(src, isNot(contains('destroyKeyAndDatabase')), reason: f.path);
+      }
+      // Milestone K1: the storage owner opens the database; it does not export or erase.
+      final owner = read('lib/data/local/sense_storage.dart');
+      for (final s in ['LocalDataService', 'eraseAllUserData', 'exportAllUserData', 'destroyKeyAndDatabase']) {
+        expect(owner, isNot(contains(s)), reason: s);
       }
     });
 

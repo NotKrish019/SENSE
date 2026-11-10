@@ -12,15 +12,19 @@ import 'main_shell.dart';
 /// Shown after onboarding (Splash → Onboarding → Consent → Home) and from
 /// Profile & settings ("Review data and consent preferences").
 ///
-/// Living Landscapes (Phase 5): presentation only. The preference model
-/// ([ConsentPreferences]: identifiers M1–M6, all off by default, in memory
-/// only), the wording of every choice, and the completion behaviour are
-/// unchanged: "Continue to SENSE" opens Home as the only route; in settings
-/// mode "Done" returns to Profile.
+/// Living Landscapes (Phase 5) design. The preference model
+/// ([ConsentPreferences]: identifiers M1–M6, all off by default), the wording
+/// of every choice, and the completion behaviour are unchanged: "Continue to
+/// SENSE" opens Home as the only route; in settings mode "Done" returns to
+/// Profile.
 ///
-/// Prototype honesty rules: choices are held in memory only; they do not
-/// start any data collection, no OS permission is requested, and this is not
-/// a research-participant consent process.
+/// Milestone K1: where the choices are kept is stated honestly from
+/// [ConsentPreferences.persistence]. By default (no storage) they are held in
+/// memory only, with the original wording. When storage is ready each change
+/// is saved first and shown only after it succeeded; a failed save changes
+/// nothing and says so. Choices never start any data collection, no OS
+/// permission is requested, and this is not a research-participant consent
+/// process.
 class ConsentScreen extends StatefulWidget {
   /// True when opened from Settings: the action returns to Settings instead
   /// of entering the dashboard.
@@ -72,14 +76,16 @@ class _ConsentScreenState extends State<ConsentScreen> {
                   style: NatureType.bodyMuted,
                 ),
                 const SizedBox(height: 18),
-                const _PrototypeNotice(),
+                _PrototypeNotice(persistence: prefs.persistence, development: prefs.isDevelopmentStorage),
                 const SizedBox(height: 26),
                 for (final m in InputModality.values) ...[
                   _ConsentChoice(
                     modality: m,
                     info: _modalityInfo[m]!,
                     value: prefs.isEnabled(m),
-                    onChanged: (v) => prefs.setEnabled(m, v),
+                    saving: prefs.isPending(m),
+                    enabled: prefs.persistence != ConsentPersistence.loading && !prefs.isPending(m),
+                    onChanged: (v) => _change(context, prefs, m, v),
                   ),
                   if (m != InputModality.values.last)
                     const Divider(height: 1, thickness: 1, color: NatureColors.divider),
@@ -91,7 +97,7 @@ class _ConsentScreenState extends State<ConsentScreen> {
                   liveRegion: true,
                   child: Text(
                     '${prefs.enabledCount} of ${InputModality.values.length} inputs turned on '
-                    '(kept only while the app is open).',
+                    '(${_countNote(prefs)}).',
                     style: NatureType.label.copyWith(color: NatureColors.ink),
                   ),
                 ),
@@ -107,6 +113,29 @@ class _ConsentScreenState extends State<ConsentScreen> {
         ),
       ),
     );
+  }
+
+  static String _countNote(ConsentPreferences prefs) => switch (prefs.persistence) {
+        ConsentPersistence.memoryOnly => 'kept only while the app is open',
+        ConsentPersistence.storageUnavailable => 'kept only while the app is open; secure storage unavailable',
+        ConsentPersistence.loading => 'loading saved choices',
+        ConsentPersistence.persisted =>
+          prefs.isDevelopmentStorage ? 'saved to development storage' : 'saved on this device',
+      };
+
+  /// Applies one change and reports a save that did not happen. The value
+  /// shown is always the model's value: it changes only after a save succeeded.
+  Future<void> _change(BuildContext context, ConsentPreferences prefs, InputModality m, bool v) async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final result = await prefs.setEnabled(m, v);
+    final message = switch (result) {
+      ConsentChangeResult.failed => 'Your choice for ${m.title} could not be saved, so nothing was changed.',
+      ConsentChangeResult.notReady => 'Your saved choices are still loading. Nothing was changed.',
+      _ => null,
+    };
+    if (message != null) {
+      messenger?.showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   void _onContinue(BuildContext context) {
@@ -197,6 +226,8 @@ class _ConsentChoice extends StatelessWidget {
   final InputModality modality;
   final _ModalityInfo info;
   final bool value;
+  final bool saving;
+  final bool enabled;
   final ValueChanged<bool> onChanged;
 
   const _ConsentChoice({
@@ -204,6 +235,8 @@ class _ConsentChoice extends StatelessWidget {
     required this.info,
     required this.value,
     required this.onChanged,
+    this.saving = false,
+    this.enabled = true,
   });
 
   @override
@@ -218,7 +251,7 @@ class _ConsentChoice extends StatelessWidget {
           SenseTappable(
             semanticLabel: '$title. ${info.statusLabel}',
             toggled: value,
-            onTap: () => onChanged(!value),
+            onTap: enabled ? () => onChanged(!value) : null,
             focusColor: NatureColors.focus,
             hoverColor: NatureColors.hover,
             borderRadius: NatureRadii.smBorder,
@@ -240,7 +273,7 @@ class _ConsentChoice extends StatelessWidget {
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               _StatusTag(label: info.statusLabel, available: available),
-                              Text(value ? 'On' : 'Off',
+                              Text(saving ? (value ? 'On · saving…' : 'Off · saving…') : (value ? 'On' : 'Off'),
                                   style: NatureType.label.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: value ? NatureColors.forest : NatureColors.inkMuted)),
@@ -349,15 +382,33 @@ class _PrintedSwitch extends StatelessWidget {
   }
 }
 
-/// How this screen works in the prototype (wording unchanged).
+/// How this screen works. In memory (the default) the original wording is
+/// kept unchanged; otherwise the first point states where choices are kept.
 class _PrototypeNotice extends StatelessWidget {
-  const _PrototypeNotice();
+  final ConsentPersistence persistence;
+  final bool development;
+  const _PrototypeNotice({required this.persistence, required this.development});
+
+  static const String _inMemory = 'Your choices are kept only while the app is open. They are not saved and are lost if you '
+      'refresh or close it.';
+
+  String get _where => switch (persistence) {
+        ConsentPersistence.memoryOnly => _inMemory,
+        ConsentPersistence.storageUnavailable =>
+          'Secure storage is unavailable, so your choices are kept only while the app is open. '
+              'They are not saved and are lost if you refresh or close it.',
+        ConsentPersistence.loading => 'Your saved choices are loading. Changes are possible once they have loaded.',
+        ConsentPersistence.persisted => development
+            ? 'Your choices are saved to development storage on this device, an encrypted test '
+                'database for development only. Development data is not for participants.'
+            : 'Your choices are saved in encrypted storage on this device. Each change is saved '
+                'before it is shown.',
+      };
 
   @override
   Widget build(BuildContext context) {
-    const points = [
-      'Your choices are kept only while the app is open. They are not saved and are lost if you '
-          'refresh or close it.',
+    final points = [
+      _where,
       'Turning an input on does not start any data collection, and no phone or browser permission '
           'is requested.',
       'This screen demonstrates consent choices. It is not a substitute for an approved '

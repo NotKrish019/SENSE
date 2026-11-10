@@ -108,12 +108,14 @@ class _VoiceScreenState extends State<VoiceScreen> {
               ListenableBuilder(
                 listenable: ConsentPreferences.instance,
                 builder: (context, _) {
-                  final on = ConsentPreferences.instance.isEnabled(InputModality.voice);
+                  final prefs = ConsentPreferences.instance;
+                  final on = prefs.isEnabled(InputModality.voice);
+                  final note = prefs.savedStateNote;
                   return Text(
                     on
-                        ? 'Voice is on in your preferences (not saved). This only notes your '
+                        ? 'Voice is on in your preferences ($note). This only notes your '
                             'interest; it does not start any recording.'
-                        : 'Voice is off in your preferences (not saved). Turning it on only notes '
+                        : 'Voice is off in your preferences ($note). Turning it on only notes '
                             'your interest; it does not start any recording.',
                     style: NatureType.body,
                   );

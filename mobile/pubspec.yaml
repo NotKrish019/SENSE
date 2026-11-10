@@ -31,6 +31,10 @@ dev_dependencies:
   test: ^1.31.1
   sqflite_common_ffi: ^2.3.6
   sqlite3: ^2.9.0
+  # Static architecture guards parse Dart sources (test/support/
+  # dart_source_guard.dart). Pinned to the version already locked as a
+  # transitive dependency of `test`; test-only, never in the app.
+  analyzer: 13.3.0
 
 flutter:
   uses-material-design: true

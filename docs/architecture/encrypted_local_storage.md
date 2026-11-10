@@ -1,7 +1,7 @@
 # Encrypted Local Storage: SQLCipher and Android Keystore (Milestone J, Stage 2)
 
 Status: **infrastructure implemented, security-hardened (review findings M1–M4, L1, L3–L6), and verified on the Android emulator only.**
-Not connected to the app. Not approved for participant data: physical-device validation is outstanding (section 14).
+Milestone K1 (section 15) adds the app's single storage owner and repository-backed consent preferences. In a normal build nothing is opened; only a debug build with `--dart-define=SENSE_DEV_STORAGE=1` opens an isolated **development** namespace. The participant database is never opened by the app. Not approved for participant data: physical-device validation is outstanding (section 14).
 
 This implements ADR-009 Decision J (SQLCipher-protected storage with Android
 Keystore-backed key management, after a compatibility and security review). It
@@ -9,8 +9,8 @@ does not change any accepted decision, so `docs/decisions.md` is unchanged.
 
 What this milestone does **not** do:
 
-- Production Save handlers, Settings Export/Erase and the Consent screen are still not connected to any database.
-- `main.dart` does not open, create or initialize anything. Registering the native channel creates nothing; only an explicit Dart call does, and only tests make that call.
+- Production Save handlers (Check-in, Sleep, Workload) and Settings Export/Erase are still not connected to any database. Since Milestone K1 the Consent screen saves preferences **only** to development storage, and only when that is explicitly enabled (section 15).
+- `main.dart` creates the storage owner but, by default, opens nothing. Registering the native channel creates nothing. Only a debug build with the explicit development define opens the development namespace; the participant database is never opened by the app.
 - Raw journal text is never persisted.
 - No microphone, Health Connect or location permission was added. The release manifest declares no permissions.
 
@@ -397,5 +397,49 @@ Hardening tests cover:
 2. **Physical backup verification** (cloud backup and device-to-device transfer, section 5).
 3. Decide on key attestation (recommended) and on user-authentication binding.
 4. Verify the SQLCipher AAR's PGP signature against an out-of-band key fingerprint and add it to the verification metadata.
-5. Design the connection to production Save handlers, Settings Export/Erase (including combining logical erase with key destruction, through the lifecycle owner) and the Consent screen. This is a separate milestone.
+5. Connect production Save handlers and Settings Export/Erase (including combining logical erase with key destruction, through the lifecycle owner). The storage owner and persisted consent exist since Milestone K1 (section 15); the Save handlers are the next milestone. Enabling participant storage at startup is a separate, explicit decision after items 1 to 4.
 6. Decide whether to migrate any legacy plaintext database. This needs a separate design.
+
+---
+
+## 15. Application storage owner and development storage (Milestone K1, 2026-11-10)
+
+**Storage owner.** `mobile/lib/data/local/sense_storage.dart` defines `SenseStorage`, a `ChangeNotifier` created once by `SenseApp` (`lib/main.dart`; not a global or static) and passed down with `SenseStorageScope` (an `InheritedNotifier`, `lib/presentation/widgets/sense_storage_scope.dart`). It is the only code outside `encrypted/` that uses `EncryptedDatabaseProvider` (enforced by a static test). It:
+
+- opens through `EncryptedDatabaseProvider`, so the existing per-isolate lifecycle owner, the native lease, the native build policy, the Keystore checks and the plaintext-header checks all apply unchanged; it adds no second lifecycle system;
+- binds the existing repositories with `LocalDataStore` (schema v2 through `SenseDatabase.options()`), then calls `LocalProfileRepository.ensureActive()`;
+- holds the one connection and exposes `StorageReady { target, database, store, profile, productionEligible, cipherVersion, security }`; a second open of the same target returns the same state, and an independent provider for the same database gets `databaseAlreadyOpen` from the lifecycle owner;
+- serialises open and close; `close()` releases the lease and is repeatable; the app closes it when the engine detaches (`AppLifecycleListener.onDetach`) and on dispose;
+- reports typed states: `StorageUnavailable(reason, failureCode)` with reasons `developmentStorageDisabled`, `participantStorageNotEnabled`, `buildNotEligible`, `unsupportedPlatform` (expected policy states) and `openFailed`, `profileUnavailable` (failures); `StorageOpening`; `StorageReady`; `StorageClosed`. Failure detail is never shown to people;
+- never falls back: no plaintext SQLite, no retry with another engine, no reset of a database that fails to open, and no access to the legacy `mindpulse_secure.db`.
+
+This is the one top-level file in `lib/data/local/` that imports Flutter, and only `package:flutter/foundation.dart` (for `ChangeNotifier`); the records, schema, repositories, store and export/erase service remain pure Dart (enforced by a static test).
+
+**Startup policy (unchanged build policy, nothing weakened).**
+
+| Build | `SENSE_DEV_STORAGE` | Startup opens | State |
+|---|---|---|---|
+| debug | not set (default) | nothing | `developmentStorageDisabled`; preferences in memory, as before |
+| debug | `1` | the development namespace | `StorageReady(development)`, `productionEligible = false` |
+| profile | any | nothing | `buildNotEligible` (also refused by the provider and natively) |
+| release | any | nothing | `participantStorageNotEnabled` (participant data collection is not connected) |
+
+`open(StorageTarget.participant)` exists for later milestones: in debug and profile builds it is refused by the provider before any key call (`buildNotProductionEligible`) and by the native gate; in a release build it still requires a hardware-backed key.
+
+**Development namespace.** `--dart-define=SENSE_DEV_STORAGE=1` (`kSenseDevStorageDefine`) is honoured only in a debug build (`SenseStoragePolicy.developmentStorageEnabled = debug && define`). The namespace `dev_storage` reuses the existing debug-only test-namespace mechanism, so it has its own directory (`no_backup/test_namespaces/dev_storage/`), its own Keystore alias (`sense_db_wrapping_key_v1__dev_storage`), its own lifecycle lease and setup marker, and its own destroy. It is never production eligible (the provider forces `productionEligible = false` for namespaces, and the owner checks it again). Profile and release builds reject it in Dart (owner and provider) and natively (`BuildPolicy.testNamespacesAllowed`). While it is enabled every route shows the persistent label **"DEVELOPMENT DATA — NOT FOR PARTICIPANTS"**. Development data is for development only: on an emulator its key is software-backed.
+
+**Persisted consent.** `ConsentPreferences` (`lib/core/state/consent_preferences.dart`) keeps its shared instance and its six modalities (M1 to M6, mapping unchanged) and gains an optional connection to the owner (`attach`):
+
+- By default, and whenever storage is disabled by policy, it is `memoryOnly`, with the original wording ("kept only while the app is open").
+- When storage is ready it loads the `ConsentRepository` snapshot, which replaces whatever was in memory (the database is authoritative), and becomes `persisted`. While loading, changes are refused (`notReady`).
+- In `persisted`, each change appends exactly one event through `ConsentRepository.recordChange` (append-only; nothing is updated or deleted) and the new value is shown **only after** that write succeeded. Turning a preference off appends the OFF event first. Repeating the current value records nothing. Changes are applied in order. A failed write changes nothing and is reported (`ConsentChangeResult.failed`; the screen says the choice could not be saved).
+- If storage fails it is `storageUnavailable`: choices are in memory and labelled as not saved. Saved values are never carried into memory.
+- There is no consent "revision" field in the schema or decisions: ordering is the existing `consent_events` AUTOINCREMENT id, with a UTC timestamp, and the latest event per modality wins.
+- These values never authorize a write: the repositories check the persisted events inside each write transaction. Revocation blocks later writes and keeps earlier records (unchanged ADR-009 Milestone B rule).
+- Onboarding records nothing by itself: it only opens the Consent screen. Unanswered modalities stay OFF, and only an explicit toggle appends an event.
+
+The Consent screen, Settings and the Voice screen state where choices are kept: "kept only while the app is open" (in memory, unchanged), "secure storage unavailable", "saved to development storage", or "saved on this device" (participant storage, not enabled in this milestone).
+
+**Host test strategy.** Host tests cannot reach the Keystore or SQLCipher. `test/support/fake_secure_key_platform.dart` (test code only) answers the channel and opens disposable plain-SQLite files through `sqflite_common_ffi`, so the real provider, owner, repositories and consent model run on the host. A static test keeps `sqflite_common_ffi` out of `lib/` and keeps the SQLCipher driver import in `secure_key_platform_io.dart` only. On the emulator, `integration_test/sense_storage_test.dart` (run with `--dart-define=SENSE_DEV_STORAGE=1`) exercises the real development namespace and the native refusal of participant storage in a debug build, then destroys the namespace.
+
+**Still not connected:** the Check-in, Sleep and Workload Save handlers (their "not saved" messages remain accurate), Export and Erase, journal text, voice, activity sync and any participant storage.

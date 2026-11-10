@@ -437,19 +437,29 @@ void main() {
   group('Boundaries', () {
     String read(String p) => File(p).readAsStringSync();
 
-    test('no production code opens the database or uses the consent repository', () {
+    test('only the consent model uses the consent repository; no screen writes records or opens a database', () {
       final appFiles = Directory('lib')
           .listSync(recursive: true)
           .whereType<File>()
           .where((f) => f.path.endsWith('.dart') && !f.path.contains('lib/data/'));
       for (final f in appFiles) {
+        final path = f.path.replaceAll('\\', '/');
         final src = f.readAsStringSync();
-        expect(src, isNot(contains('data/local/')), reason: f.path);
-        expect(src, isNot(contains('SenseDatabase')), reason: f.path);
-        expect(src, isNot(contains('ConsentRepository')), reason: f.path);
+        expect(src, isNot(contains('SenseDatabase')), reason: path);
+        expect(src, isNot(contains('openDatabase')), reason: path);
+        expect(src, isNot(contains('EncryptedDatabaseProvider')), reason: path);
+        // Milestone K1: Save handlers stay disconnected; no daily record is written.
+        expect(src, isNot(contains('.upsert(')), reason: path);
+        expect(src, isNot(contains('deleteByDate')), reason: path);
+        if (path != 'lib/core/state/consent_preferences.dart') {
+          expect(src, isNot(contains('recordChange')), reason: path);
+          expect(src, isNot(contains('.consent.')), reason: path);
+        }
       }
       expect(read('lib/data/local/local_data_store.dart'), isNot(contains('static final')),
           reason: 'no global instance that silently opens the database');
+      expect(read('lib/data/local/sense_storage.dart'), isNot(contains('static final')),
+          reason: 'the storage owner is created by the app, never a global connection');
     });
 
     test('consent history has no update or delete path in the repository code', () {
@@ -477,8 +487,9 @@ void main() {
           ['sqflite_sqlcipher: 3.4.1']);
     });
 
-    test('the production consent model stays in memory, starts OFF and is not wired to SQLite', () {
+    test('the consent model starts OFF and in memory, and reaches storage only through the owner', () {
       final prefs = ConsentPreferences.instance..reset();
+      expect(prefs.persistence, ConsentPersistence.memoryOnly);
       expect(InputModality.values.map(prefs.isEnabled), everyElement(isFalse));
       prefs.setEnabled(InputModality.sleep, true);
       expect(prefs.isEnabled(InputModality.sleep), isTrue);
@@ -487,9 +498,12 @@ void main() {
       final screen = read('lib/presentation/screens/consent_screen.dart');
       for (final src in [model, screen]) {
         expect(src, isNot(contains('sqflite')));
-        expect(src, isNot(contains('data/local')));
       }
-      expect(model, contains('nothing here is persisted'));
+      // Milestone K1: the model may use the storage owner only; the screen none.
+      expect(RegExp(r"import '[^']*data/[^']*'").allMatches(model).map((m) => m[0]),
+          ["import '../../data/local/sense_storage.dart'"]);
+      expect(screen, isNot(contains('data/local')));
+      expect(model, contains('By default nothing here is persisted'));
       expect(screen, contains('Your choices are kept only while the app is open. They are not saved'));
     });
   });

@@ -7,6 +7,8 @@ import 'package:mindpulse/data/local/encrypted/encrypted_database.dart';
 import 'package:mindpulse/data/local/local_data_store.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'support/dart_source_guard.dart';
+
 /// Milestone J: the Dart side of the encrypted-database provider, on the host
 /// VM with a fake native platform. The real Keystore, lifecycle registry and
 /// SQLCipher run on a device (android/app/src/androidTest and
@@ -541,27 +543,31 @@ void main() {
 
   group('Static guards', () {
     String read(String p) => File(p).readAsStringSync();
+    // Parsed with the Dart analyzer: any quoting, export/part, conditional URIs,
+    // and identifiers in code only (test/support/dart_source_guard.dart).
+    final lib = parseDartTree('lib');
+    const platformIo = 'lib/data/local/encrypted/secure_key_platform_io.dart';
 
     test('only the Android platform file may import the SQLCipher driver (one connection owner)', () {
-      final importers = Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart') && read(f.path).contains('package:sqflite_sqlcipher/'))
-          .map((f) => f.path.replaceAll('\\', '/'))
-          .toList();
-      expect(importers, ['lib/data/local/encrypted/secure_key_platform_io.dart']);
-      expect(read('lib/data/local/encrypted/secure_key_platform_io.dart'), contains('singleInstance: true'));
+      final importers =
+          lib.values.where((f) => f.uris.any((u) => u.startsWith('package:sqflite_sqlcipher'))).map((f) => f.path);
+      expect(importers, [platformIo]);
+      expect(lib[platformIo]!.of(DirectiveKind.export), isEmpty, reason: 'the driver is never re-exported');
+      expect(read(platformIo), contains('singleInstance: true'));
+      // The platform file is reached only through the conditional import in
+      // secure_key_platform.dart (dart.library.io), never directly.
+      final dependents = lib.values.where((f) => f.projectDependencies.contains(platformIo)).map((f) => f.path);
+      expect(dependents, ['lib/data/local/encrypted/secure_key_platform.dart']);
     });
 
     test('the provider library never imports dart:io (web builds) and nothing outside encrypted/ uses it', () {
-      expect(read('lib/data/local/encrypted/encrypted_database.dart'), isNot(contains("import 'dart:io'")));
-      final users = Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart') && !f.path.contains('/encrypted/'))
-          .where((f) => read(f.path).contains('EncryptedDatabaseProvider'))
-          .toList();
-      expect(users, isEmpty, reason: 'production code must not open the encrypted database yet');
+      expect(lib['lib/data/local/encrypted/encrypted_database.dart']!.uris, isNot(contains('dart:io')));
+      final users = lib.values
+          .where((f) => !f.path.startsWith('lib/data/local/encrypted/'))
+          .where((f) => f.identifiers.contains('EncryptedDatabaseProvider'))
+          .map((f) => f.path);
+      // Milestone K1: the storage owner is the only user (one connection owner).
+      expect(users, ['lib/data/local/sense_storage.dart'], reason: 'only SenseStorage may open the encrypted database');
     });
   });
 }
