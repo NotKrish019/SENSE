@@ -35,10 +35,11 @@ import 'package:sqflite/sqlite_api.dart';
 import 'encrypted/encrypted_database.dart';
 import 'check_in_records.dart';
 import 'local_data_store.dart';
+import 'sleep_records.dart';
 import 'workload_records.dart';
 
-// Milestones K2 and K3: the narrow workload and check-in surfaces and the
-// record types they carry.
+// Milestones K2, K3 and K4: the narrow workload, check-in and sleep surfaces
+// and the record types they carry.
 // Only these are re-exported; the database, store and repositories are not.
 export 'check_in_records.dart'
     show
@@ -55,7 +56,24 @@ export 'check_in_records.dart'
         CheckInSaveInvalid,
         CheckInSaveFailed;
 export 'local_data_store.dart'
-    show WorkloadEntry, CheckInEntry, LocalDay, Provenance, StoredRecord, ConsentDenialReason;
+    show WorkloadEntry, CheckInEntry, SleepEntry, LocalDay, Provenance, StoredRecord, ConsentDenialReason;
+export 'sleep_records.dart'
+    show
+        SleepAccess,
+        SleepStorageStatus,
+        SleepLoadOutcome,
+        SleepLoaded,
+        SleepLoadUnavailable,
+        SleepLoadFailed,
+        SleepRangeOutcome,
+        SleepRangeLoaded,
+        SleepRangeUnavailable,
+        SleepSaveOutcome,
+        SleepSaved,
+        SleepConsentDenied,
+        SleepSaveUnavailable,
+        SleepSaveInvalid,
+        SleepSaveFailed;
 export 'workload_records.dart'
     show
         WorkloadAccess,
@@ -254,6 +272,10 @@ class SenseStorage extends ChangeNotifier {
   /// The narrow check-in operations for screens (Milestone K3). Follows this
   /// owner's state; never exposes the database, store or repositories.
   late final CheckInAccess checkIn = _StorageCheckInAccess(this);
+
+  /// The narrow sleep operations for screens (Milestone K4). Follows this
+  /// owner's state; never exposes the database, store or repositories.
+  late final SleepAccess sleep = _StorageSleepAccess(this);
 
   void _set(SenseStorageState s) {
     _state = s;
@@ -485,6 +507,57 @@ class _StorageCheckInAccess implements CheckInAccess {
   @override
   Future<CheckInSaveOutcome> save(CheckInEntry entry) async =>
       await _current()?.save(entry) ?? const CheckInSaveUnavailable();
+
+  @override
+  void addListener(void Function() listener) => _owner.addListener(listener);
+
+  @override
+  void removeListener(void Function() listener) => _owner.removeListener(listener);
+}
+
+/// [SleepAccess] over the owner's current state (Milestone K4), the same way
+/// as [_StorageWorkloadAccess] and [_StorageCheckInAccess]: each call uses the
+/// connection that is ready at that moment, and never opens anything.
+class _StorageSleepAccess implements SleepAccess {
+  final SenseStorage _owner;
+  StorageReady? _boundTo;
+  SleepRecordService? _service;
+
+  _StorageSleepAccess(this._owner);
+
+  SleepRecordService? _current() {
+    final r = _owner.ready;
+    if (r == null) return null;
+    if (!identical(r, _boundTo)) {
+      _boundTo = r;
+      _service = SleepRecordService(r.database, r.profile.localPersonId, clock: _owner._clock, ids: _owner._ids);
+    }
+    return _service;
+  }
+
+  @override
+  SleepStorageStatus get status => switch (_owner.state) {
+        StorageReady() => SleepStorageStatus.open,
+        StorageOpening() => SleepStorageStatus.opening,
+        StorageUnavailable(:final reason) =>
+          reason.isFailure ? SleepStorageStatus.unavailable : SleepStorageStatus.notConnected,
+        StorageClosed() => SleepStorageStatus.unavailable,
+      };
+
+  @override
+  bool get isDevelopment => _owner.ready?.isDevelopment ?? _owner.developmentStorageEnabled;
+
+  @override
+  Future<SleepLoadOutcome> loadDay(String localDate) async =>
+      await _current()?.loadDay(localDate) ?? const SleepLoadUnavailable();
+
+  @override
+  Future<SleepRangeOutcome> loadRange({required String fromDate, required String toDate}) async =>
+      await _current()?.loadRange(fromDate: fromDate, toDate: toDate) ?? const SleepRangeUnavailable();
+
+  @override
+  Future<SleepSaveOutcome> save(SleepEntry entry) async =>
+      await _current()?.save(entry) ?? const SleepSaveUnavailable();
 
   @override
   void addListener(void Function() listener) => _owner.addListener(listener);

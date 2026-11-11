@@ -9,7 +9,7 @@ does not change any accepted decision, so `docs/decisions.md` is unchanged.
 
 What this milestone does **not** do:
 
-- The production Sleep Save handler and Settings Export/Erase are still not connected to any database. Since Milestones K2 and K3 the Workload Save handler and the Check-in Finish action write **only** to development storage, and only when that is explicitly enabled (sections 16 and 17). Since Milestone K1 the Consent screen saves preferences **only** to development storage, and only when that is explicitly enabled (section 15).
+- Settings Export/Erase are still not connected to any database. Since Milestones K2, K3 and K4 the Workload and Sleep Save handlers and the Check-in Finish action write **only** to development storage, and only when that is explicitly enabled (sections 16 to 18). Since Milestone K1 the Consent screen saves preferences **only** to development storage, and only when that is explicitly enabled (section 15).
 - `main.dart` creates the storage owner but, by default, opens nothing. Registering the native channel creates nothing. Only a debug build with the explicit development define opens the development namespace; the participant database is never opened by the app.
 - Raw journal text is never persisted.
 - No microphone, Health Connect or location permission was added. The release manifest declares no permissions.
@@ -442,7 +442,7 @@ The Consent screen, Settings and the Voice screen state where choices are kept: 
 
 **Host test strategy.** Host tests cannot reach the Keystore or SQLCipher. `test/support/fake_secure_key_platform.dart` (test code only) answers the channel and opens disposable plain-SQLite files through `sqflite_common_ffi`, so the real provider, owner, repositories and consent model run on the host. A static test keeps `sqflite_common_ffi` out of `lib/` and keeps the SQLCipher driver import in `secure_key_platform_io.dart` only. On the emulator, `integration_test/sense_storage_test.dart` (run with `--dart-define=SENSE_DEV_STORAGE=1`) exercises the real development namespace and the native refusal of participant storage in a debug build, then destroys the namespace.
 
-**Still not connected:** the Sleep Save handler (its "not saved" message remains accurate), Export and Erase, journal text, voice, activity sync and any participant storage. Workload (Milestone K2, section 16) and Check-in (Milestone K3, section 17) are connected to development storage.
+**Still not connected:** Export and Erase, journal text, voice, activity (manual or synced) and any participant storage. Workload (Milestone K2, section 16), Check-in (Milestone K3, section 17) and Sleep (Milestone K4, section 18) are connected to development storage.
 
 ---
 
@@ -509,3 +509,34 @@ The controller clamps each answer to 1 to 5. The defaults come from `CheckInEntr
 **Evidence (emulator-5554, development namespace).** `integration_test/check_in_persistence_test.dart` drives the real Check-in screen in two runs with `am force-stop` between them. Phase 1 starts from an empty development namespace, sees Finish denied before M1 is on (no completion page, no row), enables M1, completes the check-in through the UI (mood Good, stress 4), reads the row directly from the encrypted database, and closes it. Phase 2, in a new process, reopens the same database, finds the identical record (id, timestamps, provenance, values, date), sees the screen prefilled, changes motivation and stress through the UI, finishes ("Check-in updated": same id and creation time, new values and provenance, one row), revokes M1, sees the next Finish denied with the record unchanged, confirms that no participant database, envelope or key alias exists, and destroys the development namespace. Emulator keys are software-backed: this is **not** hardware-backed or physical-device validation, and development data is not participant data.
 
 **Still required before participant data:** everything in section 14, physical-device validation in particular.
+
+---
+
+## 18. Sleep persistence (Milestone K4, 2026-11-11)
+
+The Sleep screen saves through the same architecture as Workload and Check-in (sections 16 and 17), **only** to the development namespace (debug build plus `--dart-define=SENSE_DEV_STORAGE=1`); in every other build it keeps the prototype "not saved" message and the labelled sample history unchanged. Schema v2 (including the `sleep_records` constraints: `duration_minutes` 240 to 720 and a multiple of 30, `bedtime_local` and `wake_time_local` strict `HH:MM`, `rest_quality` 1 to 5, `source = 'MANUAL_LOG'`, one row per person and `local_date`), the repositories, consent semantics, SQLCipher, Keystore, the build policy and all Workload and Check-in semantics are unchanged; no dependency was added.
+
+**Flow.** `SleepScreen` → `SleepController` (`lib/core/state/sleep_controller.dart`) → `SleepAccess` (`lib/data/local/sleep_records.dart`; `loadDay`, `loadRange`, `save`; supplied by `SenseStorage.sleep`, reached through `sleepAccessOf(context)`) → `SleepRecordService` → the existing `SleepRepository` (`byDate`, `range`, `upsert`) → `LocalDataStore` → the encrypted connection held by `SenseStorage`. `sense_storage.dart` re-exports the sleep surface and `SleepEntry` with explicit `show` lists.
+
+**Field mapping** (`SleepEntry`, ADR-009 Decision C):
+
+| Screen | Field | Stored as | Range | Default |
+|---|---|---|---|---|
+| Total sleep duration (slider, hours) | `duration_minutes` | integer minutes, `(hours × 60)` snapped to the 30-minute grid | 240 to 720 (4 to 12 h) | 450 (7.5 h) |
+| Bedtime (time picker) | `bedtime_local` | zero-padded 24-hour `HH:MM` (00:05 is "00:05") | 00:00 to 23:59 | 23:30 |
+| Wake time (time picker) | `wake_time_local` | zero-padded 24-hour `HH:MM` | 00:00 to 23:59 | 07:00 |
+| Subjective rest quality (stars) | `rest_quality` | integer | 1 to 5 | 4 |
+
+The picker's display may be 12-hour ("11:30 PM"); the stored value never is. Stored values are parsed back strictly (`^([01]\d|2[0-3]):[0-5]\d$`), with no locale involved. Duration is its own answer and is never calculated from the two times. A night without a record is never shown as zero hours.
+
+**Wake-up date.** A sleep record belongs to the local calendar date of wake-up (the data dictionary's `date_epoch`, stored as `local_date`). The form is "Last night's sleep (woke today, <weekday day month>)" and is read and saved under today's `LocalDay`: bedtime 23:30 on 10 November and wake time 07:00 on 11 November is the 11 November record. No date is computed from UTC timestamps or from the times.
+
+**Provenance, daily updates, M3, save lock.** As for Workload and Check-in: adjusted fields are changed (including back to the default); an existing record's changed fields are kept and extended; non-default values are never defaults; `byDate` and `upsert` share one transaction, so a second save the same wake-up day updates the same record (same `id` and `created_at_utc`); the repository's M3 check inside the write transaction is the only gate (the controller and screen never read `ConsentPreferences`; static test); M3 off means nothing is written, values stay, and the screen links to the consent preferences without turning M3 on; M1 or M4 never authorize a sleep record. While saving, the duration slider, both time fields, the stars, Save, the back control and system back are disabled and the controller refuses changes, so "saved" and "updated" describe exactly the committed values; a failed save keeps the values and re-enables everything. Outcomes are shown inline in the live status line directly above Save (no floating message), so the Save button is never covered and stays usable immediately after a save; "saved" and "updated" remain distinct.
+
+**Midnight.** If the local date changes before Save, nothing is written for the earlier date: the controller reads the new wake-up day, keeps adjusted values, fills untouched ones from that day's record (or the starting values), shows the new date in the header, and requires another explicit Save. If the new day cannot be read, nothing is written, the message says so, and the next Save reads the day first and again asks for review before writing.
+
+**History.** When storage is connected, "Your last 7 days" shows only stored records for the last seven wake-up days (the repository's existing `range`, oldest first), refreshed after each save; days without a record are left empty ("–"), never zero. If the history cannot be read it says "Your saved sleep entries will appear here." and shows nothing. The fixed "Example 7-day sleep history" (labelled sample data) appears **only** when storage is not connected, exactly as before; sample values are never presented as the person's records.
+
+**Static guards.** The K1 to K3 assertions are unchanged except: `sleep_controller.dart` joins the files allowed to import `sense_storage.dart`, `sleep_records.dart` joins the allowed export sources (with mandatory `show` lists), and `SleepRecordService`/`SleepRepository` join the banned identifiers. The former "Sleep remains disconnected" check is replaced by a stronger one: Journal, Voice and Activity reference no storage surface at all (any owner, controller or access type, or `save`/`loadDay`/`loadRange`). The K4 test mirrors K3 (the screen's single `sleepAccessOf` use is the `SleepController(access: ...)` argument; only the screen, controller and scope use the surface; no consent reads) and checks that Sleep, Check-in and Workload never reach each other's surfaces.
+
+**Evidence (emulator-5554, development namespace).** `integration_test/sleep_persistence_test.dart` drives the real screen in two runs with `am force-stop` between them. Phase 1 starts from an empty namespace, sees Save denied before M3 is on (no row), enables M3, enters a night crossing midnight through the UI (bedtime 23:45 and wake 06:50 through the time picker, duration 7.0 hours, quality 3), saves, and reads the row directly from the encrypted database: `local_date` is the wake-up date, 420 minutes, "23:45", "06:50", 3, `MANUAL_LOG`, all four fields changed. Phase 2, in a new process, finds the identical record, sees the form and history prefilled from it, edits it (same id and creation time, one row), revokes M3, sees the next Save denied with the record unchanged, confirms no participant database, envelope or key alias exists, and destroys the namespace. Emulator keys are software-backed: not hardware-backed or physical-device validation; development data is not participant data.

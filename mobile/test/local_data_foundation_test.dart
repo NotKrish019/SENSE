@@ -671,6 +671,8 @@ void main() {
         'lib/core/state/workload_controller.dart',
         // Milestone K3: the Check-in controller, through the narrow CheckInAccess.
         'lib/core/state/check_in_controller.dart',
+        // Milestone K4: the Sleep controller, through the narrow SleepAccess.
+        'lib/core/state/sleep_controller.dart',
         'lib/presentation/widgets/sense_storage_scope.dart',
       };
       final appFiles = lib.values.where((f) => !f.path.startsWith('lib/data/')).toList();

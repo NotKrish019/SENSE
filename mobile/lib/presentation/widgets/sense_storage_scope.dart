@@ -83,3 +83,9 @@ class DevelopmentStorageBanner extends StatelessWidget {
 /// [workloadAccessOf]: typed load and save only, no dependency registered.
 CheckInAccess? checkInAccessOf(BuildContext context) =>
     context.getInheritedWidgetOfExactType<SenseStorageScope>()?.notifier?.checkIn;
+
+/// The narrow sleep operations for the Sleep screen (Milestone K4), or null
+/// when there is no storage owner above [context]. Same rules as
+/// [workloadAccessOf]: typed reads and save only, no dependency registered.
+SleepAccess? sleepAccessOf(BuildContext context) =>
+    context.getInheritedWidgetOfExactType<SenseStorageScope>()?.notifier?.sleep;

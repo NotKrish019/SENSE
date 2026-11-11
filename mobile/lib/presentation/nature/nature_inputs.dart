@@ -169,7 +169,10 @@ class NatureTimeField extends StatelessWidget {
   final String label;
   final String time;
   final IconData icon;
-  final VoidCallback onTap;
+
+  /// Null disables the field (announced as disabled), for example while a
+  /// save is in progress.
+  final VoidCallback? onTap;
   const NatureTimeField({
     super.key,
     required this.label,
@@ -181,7 +184,7 @@ class NatureTimeField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SenseTappable(
-      semanticLabel: '$label: $time. Tap to change.',
+      semanticLabel: onTap == null ? '$label: $time' : '$label: $time. Tap to change.',
       onTap: onTap,
       focusColor: NatureColors.focus,
       hoverColor: NatureColors.paper,
