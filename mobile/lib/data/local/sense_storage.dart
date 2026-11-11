@@ -34,6 +34,25 @@ import 'package:sqflite/sqlite_api.dart';
 
 import 'encrypted/encrypted_database.dart';
 import 'local_data_store.dart';
+import 'workload_records.dart';
+
+// Milestone K2: the narrow workload surface and the record types it carries.
+// Only these are re-exported; the database, store and repositories are not.
+export 'local_data_store.dart' show WorkloadEntry, LocalDay, Provenance, StoredRecord, ConsentDenialReason;
+export 'workload_records.dart'
+    show
+        WorkloadAccess,
+        WorkloadStorageStatus,
+        WorkloadLoadOutcome,
+        WorkloadLoaded,
+        WorkloadLoadUnavailable,
+        WorkloadLoadFailed,
+        WorkloadSaveOutcome,
+        WorkloadSaved,
+        WorkloadConsentDenied,
+        WorkloadSaveUnavailable,
+        WorkloadSaveInvalid,
+        WorkloadSaveFailed;
 
 /// `--dart-define=SENSE_DEV_STORAGE=1` was given at build time.
 const bool kSenseDevStorageDefine = String.fromEnvironment('SENSE_DEV_STORAGE') == '1';
@@ -211,6 +230,10 @@ class SenseStorage extends ChangeNotifier {
 
   bool get developmentStorageEnabled => policy.developmentStorageEnabled;
 
+  /// The narrow workload operations for screens (Milestone K2). Follows this
+  /// owner's state; never exposes the database, store or repositories.
+  late final WorkloadAccess workload = _StorageWorkloadAccess(this);
+
   void _set(SenseStorageState s) {
     _state = s;
     if (!_disposed) notifyListeners();
@@ -353,4 +376,51 @@ class SenseStorage extends ChangeNotifier {
     _disposed = true;
     super.dispose();
   }
+}
+
+/// [WorkloadAccess] over the owner's current state (Milestone K2). Each call
+/// uses the connection that is ready at that moment; when none is, it returns
+/// a typed "unavailable" outcome instead of opening anything.
+class _StorageWorkloadAccess implements WorkloadAccess {
+  final SenseStorage _owner;
+  StorageReady? _boundTo;
+  WorkloadRecordService? _service;
+
+  _StorageWorkloadAccess(this._owner);
+
+  WorkloadRecordService? _current() {
+    final r = _owner.ready;
+    if (r == null) return null;
+    if (!identical(r, _boundTo)) {
+      _boundTo = r;
+      _service = WorkloadRecordService(r.database, r.profile.localPersonId, clock: _owner._clock, ids: _owner._ids);
+    }
+    return _service;
+  }
+
+  @override
+  WorkloadStorageStatus get status => switch (_owner.state) {
+        StorageReady() => WorkloadStorageStatus.open,
+        StorageOpening() => WorkloadStorageStatus.opening,
+        StorageUnavailable(:final reason) =>
+          reason.isFailure ? WorkloadStorageStatus.unavailable : WorkloadStorageStatus.notConnected,
+        StorageClosed() => WorkloadStorageStatus.unavailable,
+      };
+
+  @override
+  bool get isDevelopment => _owner.ready?.isDevelopment ?? _owner.developmentStorageEnabled;
+
+  @override
+  Future<WorkloadLoadOutcome> loadDay(String localDate) async =>
+      await _current()?.loadDay(localDate) ?? const WorkloadLoadUnavailable();
+
+  @override
+  Future<WorkloadSaveOutcome> save(WorkloadEntry entry) async =>
+      await _current()?.save(entry) ?? const WorkloadSaveUnavailable();
+
+  @override
+  void addListener(void Function() listener) => _owner.addListener(listener);
+
+  @override
+  void removeListener(void Function() listener) => _owner.removeListener(listener);
 }

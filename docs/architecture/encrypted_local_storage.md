@@ -9,7 +9,7 @@ does not change any accepted decision, so `docs/decisions.md` is unchanged.
 
 What this milestone does **not** do:
 
-- Production Save handlers (Check-in, Sleep, Workload) and Settings Export/Erase are still not connected to any database. Since Milestone K1 the Consent screen saves preferences **only** to development storage, and only when that is explicitly enabled (section 15).
+- Production Save handlers for Check-in and Sleep, and Settings Export/Erase, are still not connected to any database. Since Milestone K2 the Workload Save handler writes **only** to development storage, and only when that is explicitly enabled (section 16). Since Milestone K1 the Consent screen saves preferences **only** to development storage, and only when that is explicitly enabled (section 15).
 - `main.dart` creates the storage owner but, by default, opens nothing. Registering the native channel creates nothing. Only a debug build with the explicit development define opens the development namespace; the participant database is never opened by the app.
 - Raw journal text is never persisted.
 - No microphone, Health Connect or location permission was added. The release manifest declares no permissions.
@@ -442,4 +442,36 @@ The Consent screen, Settings and the Voice screen state where choices are kept: 
 
 **Host test strategy.** Host tests cannot reach the Keystore or SQLCipher. `test/support/fake_secure_key_platform.dart` (test code only) answers the channel and opens disposable plain-SQLite files through `sqflite_common_ffi`, so the real provider, owner, repositories and consent model run on the host. A static test keeps `sqflite_common_ffi` out of `lib/` and keeps the SQLCipher driver import in `secure_key_platform_io.dart` only. On the emulator, `integration_test/sense_storage_test.dart` (run with `--dart-define=SENSE_DEV_STORAGE=1`) exercises the real development namespace and the native refusal of participant storage in a debug build, then destroys the namespace.
 
-**Still not connected:** the Check-in, Sleep and Workload Save handlers (their "not saved" messages remain accurate), Export and Erase, journal text, voice, activity sync and any participant storage.
+**Still not connected:** the Check-in and Sleep Save handlers (their "not saved" messages remain accurate), Export and Erase, journal text, voice, activity sync and any participant storage. Workload is connected to development storage by Milestone K2 (section 16).
+
+---
+
+## 16. Workload persistence (Milestone K2, 2026-11-11)
+
+The Workload screen is the first production screen that saves. It writes **only** to the development namespace of section 15 (debug build plus `--dart-define=SENSE_DEV_STORAGE=1`); in every other build it keeps the prototype "not saved" behaviour unchanged. Schema v2, the repositories, the consent semantics, SQLCipher, the Keystore code and the build policy are unchanged; no dependency was added.
+
+**Flow.** `WorkloadScreen` → `WorkloadController` (`lib/core/state/workload_controller.dart`, a `ChangeNotifier`, one per screen) → `WorkloadAccess` (a narrow interface in `lib/data/local/workload_records.dart`, supplied by `SenseStorage.workload` and reached through `workloadAccessOf(context)`) → `WorkloadRecordService` → the existing `WorkloadRepository` (`byDate`, `upsert`) → `LocalDataStore` → the encrypted connection held by `SenseStorage`. The screen and controller never see the database, the store, a repository or `StorageReady`; `sense_storage.dart` re-exports only the workload surface and the record value types, with explicit `show` lists.
+
+**Field mapping** (`WorkloadEntry`, ADR-009 Decision D):
+
+| Screen | Field | Range | Default |
+|---|---|---|---|
+| Mental demand (slider) | `mental_demand` | 1 to 5 | 3 |
+| Effort invested (slider) | `effort` | 1 to 5 | 3 |
+| Impending deadlines, next 48 hours (stepper) | `deadlines_48h` | 0 to 20 | 1 |
+
+The deadline stepper's "One fewer" button is disabled at 0 and its "One more" button at 20 (the Decision D correction); the controller also ignores steps beyond either limit and clamps the ratings. Zero deadlines is a real observation and is stored as 0. The local day is `LocalDay.fromLocal` (date and UTC offset) at the moment today's entry is read; if the local date has changed by the time Save is pressed, nothing is written and the form reloads the new day.
+
+**Provenance** (Decision B). A field is recorded as changed once the person adjusts it in the session, including when they move it away and back to its default (an explicit choice). Every other field is an untouched default. When today's entry already exists, its stored `changed_fields` are kept and the session's adjusted fields are added; a value that differs from its initial default is never recorded as a default. The result always satisfies `DailyEntry.validate()`.
+
+**Daily update semantics.** On open the controller reads today's entry (`byDate`) and prefills the form. A save runs `byDate` and `upsert` in one `LocalDataStore.transaction`, so whether it created or updated the entry is exact. An existing entry keeps its `id` and `created_at_utc`; its values, provenance and `updated_at_utc` are replaced (the unchanged repository contract). There is one row per person per local date. The screen says "Today's workload entry was saved in development storage." for a new entry and "Today's workload entry was updated." for an existing one, and only after the transaction committed.
+
+**M4 authorization.** The repository's `requireConsent` check for M4 runs inside the same transaction as the write (Milestone B); the controller and screen never read the in-memory `ConsentPreferences` (a static test enforces this). M4 never recorded or OFF: the write is refused, nothing is written, and the screen shows "Workload is turned off in your data and consent preferences, so nothing was saved." with a link to the consent preferences. Nothing turns M4 on automatically. A revocation racing a save is ordered by the transactions; earlier records remain after revocation. A missing profile or an unreadable consent state is reported as a failed save, not as a preference.
+
+**States.** `WorkloadPhase`: idle, loading, editing, saving, saved, updated, consentDenied, notConnected (prototype behaviour), storageUnavailable, failed. Save is disabled while loading or saving; repeated taps during a save return the same single write. Failed writes keep the values on screen and say nothing was saved. Database exception detail is never shown.
+
+**Static guards.** The K1 analyzer-based guards are unchanged in strength. K2 adds: the controller as the one more file allowed to import `sense_storage.dart`; `WorkloadRecordService` and `WorkloadRepository` as banned identifiers outside `lib/data/`; a check that every export of `sense_storage.dart` uses a `show` list without database, store or repository types (the guard helper now records `show` combinators); a check that only the Workload screen, its controller and the scope touch the workload surface, and that the screen's single use of `workloadAccessOf` is the `WorkloadController(access: ...)` argument (the helper now records call sites, so a direct `?.save` from the screen fails); and a check that neither the screen nor the controller reads consent preferences. Check-in and Sleep remain checked as disconnected, now with AST checks. `test/dart_source_guard_test.dart` pins the helper itself (show lists, bare and hide-only exports, quote styles, `?.` and pattern-field accesses, call sites, parse failures). Seven deliberate violations were each injected into the real sources and each was caught by its intended guard: re-exporting `LocalDataStore`, a bare export, `?.ready` from the screen, a direct `save` from the screen, Check-in using `WorkloadController`, the controller importing consent preferences, and an FFI import in `lib/`.
+
+**Evidence (emulator-5554, development namespace).** `integration_test/workload_persistence_test.dart`, two runs with `am force-stop` between them: phase 1 confirms a save is denied before M4 is on, enables M4, saves through the controller, reloads it identically and closes the database; phase 2, in a new process, reopens the same development database and finds the identical record (id, `created_at_utc`, `updated_at_utc`, provenance, values, date), updates it in place (one row, same id and creation time), revokes M4, sees the next save denied and the record kept, confirms that no participant database, envelope or key alias exists, and destroys the development namespace. Emulator keys are software-backed: this is **not** hardware-backed or physical-device validation, and development data is not participant data.
+
+**Still required before participant data:** everything in section 14, physical-device validation in particular; participant storage stays closed in debug and profile builds, and release builds still do not open it.

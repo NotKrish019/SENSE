@@ -221,7 +221,9 @@ class NatureCountStepper extends StatelessWidget {
 
   /// Null when the value cannot go lower (the button is then disabled).
   final VoidCallback? onDecrement;
-  final VoidCallback onIncrement;
+
+  /// Null when the value cannot go higher (the button is then disabled).
+  final VoidCallback? onIncrement;
   final String decrementLabel;
   final String incrementLabel;
 

@@ -16,6 +16,14 @@ class SenseStorageScope extends InheritedNotifier<SenseStorage> {
       context.dependOnInheritedWidgetOfExactType<SenseStorageScope>()?.notifier;
 }
 
+/// The narrow workload operations for the Workload screen (Milestone K2), or
+/// null when there is no storage owner above [context]. Screens receive only
+/// these typed load and save operations, never the database, the store or a
+/// repository. Does not register a dependency: the returned object notifies
+/// its own listeners when storage changes.
+WorkloadAccess? workloadAccessOf(BuildContext context) =>
+    context.getInheritedWidgetOfExactType<SenseStorageScope>()?.notifier?.workload;
+
 /// A persistent, clearly visible strip above every route while development
 /// storage is enabled ([kDevelopmentStorageLabel]). Nothing is shown otherwise.
 class DevelopmentStorageBanner extends StatelessWidget {

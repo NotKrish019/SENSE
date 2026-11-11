@@ -459,7 +459,9 @@ void main() {
       const dataTypes = {'StorageReady', 'LocalDataStore', 'LocalDataService', 'EraseResult', 'SenseDatabase',
           'Database', 'DatabaseExecutor', 'Transaction', 'Batch', 'EncryptedDatabaseProvider', 'DatabaseHelper',
           'openDatabase', 'LocalProfileRepository', 'DailyRecordRepository', 'ConsentRepository',
-          'SqliteLocalProfileRepository', 'SqliteDailyRecordRepository', 'SqliteConsentRepository'};
+          'SqliteLocalProfileRepository', 'SqliteDailyRecordRepository', 'SqliteConsentRepository',
+          // Milestone K2: the service bound to the connection stays inside the owner.
+          'WorkloadRecordService', 'WorkloadRepository'};
       // The consent model is the one non-data reader of the ready store: it
       // reads the consent snapshot and appends consent events, nothing else.
       const consentModel = 'lib/core/state/consent_preferences.dart';
@@ -491,16 +493,66 @@ void main() {
       expect(src, contains("String.fromEnvironment('SENSE_DEV_STORAGE') == '1'"));
     });
 
-    test('Check-in, Sleep and Workload Save handlers remain disconnected', () {
-      for (final screen in ['check_in_screen.dart', 'sleep_screen.dart', 'workload_screen.dart']) {
+    test('Check-in and Sleep Save handlers remain disconnected', () {
+      for (final screen in ['check_in_screen.dart', 'sleep_screen.dart']) {
         final src = read('lib/presentation/screens/$screen');
-        expect(src, isNot(contains('SenseStorage')), reason: screen);
-        expect(src, isNot(contains('upsert')), reason: screen);
+        final facts = lib['lib/presentation/screens/$screen']!;
+        expect(facts.identifiers.intersection({'SenseStorage', 'WorkloadController', 'workloadAccessOf'}), isEmpty,
+            reason: screen);
+        expect(facts.memberAccesses, isNot(contains('upsert')), reason: screen);
         expect(src, contains('NatureNotSavedNote'), reason: screen);
       }
       expect(read('lib/presentation/screens/sleep_screen.dart'), contains("showNatureNotSavedMessage(context, 'sleep entry')"));
-      expect(read('lib/presentation/screens/workload_screen.dart'),
-          contains("showNatureNotSavedMessage(context, 'workload rating')"));
+    });
+
+    // ---- Milestone K2: Workload persistence boundary ---------------------------------------
+    test('K2: the storage owner re-exports only the narrow workload surface (show lists, no store or database)', () {
+      final owner = lib['lib/data/local/sense_storage.dart']!;
+      final exports = owner.of(DirectiveKind.export).toList();
+      expect(exports.map((e) => e.projectPath).toSet(),
+          {'lib/data/local/local_data_store.dart', 'lib/data/local/workload_records.dart'});
+      for (final e in exports) {
+        expect(e.shown, isNotNull, reason: '${e.uri} must use an explicit show list');
+      }
+      final shown = {for (final e in exports) ...e.shown!};
+      expect(shown.intersection({
+        'Database', 'DatabaseExecutor', 'LocalDataStore', 'SenseDatabase', 'WorkloadRecordService',
+        'WorkloadRepository', 'DailyRecordRepository', 'ConsentRepository', 'LocalProfileRepository',
+        'SqliteDailyRecordRepository', 'LocalDataService', 'requireConsent', 'ConsentEvent',
+      }), isEmpty);
+      // The workload service is built only by the owner.
+      final builders = lib.values.where((f) => f.identifiers.contains('WorkloadRecordService')).map((f) => f.path);
+      expect(builders.toSet(), {'lib/data/local/sense_storage.dart', 'lib/data/local/workload_records.dart'});
+    });
+
+    test('K2: Workload saves only through WorkloadController and WorkloadAccess (no screen-level consent gate)', () {
+      const screen = 'lib/presentation/screens/workload_screen.dart';
+      const controller = 'lib/core/state/workload_controller.dart';
+      const scope = 'lib/presentation/widgets/sense_storage_scope.dart';
+      final s = lib[screen]!;
+      expect(s.identifiers, containsAll(['WorkloadController', 'workloadAccessOf']));
+      // The screen's one use of the access is handing it to its controller:
+      // it never keeps it, calls save or loadDay on it, or passes it elsewhere.
+      expect(s.identifierCounts['workloadAccessOf'], 1);
+      expect(s.callSites['workloadAccessOf'], {'WorkloadController(access:)'});
+      expect(s.identifiers.intersection({'WorkloadAccess', 'WorkloadEntry', 'SenseStorage', 'SenseStorageScope'}),
+          isEmpty);
+      // Only these files touch the workload access surface.
+      final users = lib.values
+          .where((f) => !f.path.startsWith('lib/data/'))
+          .where((f) => f.identifiers.intersection({'WorkloadAccess', 'workloadAccessOf'}).isNotEmpty)
+          .map((f) => f.path)
+          .toSet();
+      expect(users, {screen, controller, scope});
+      // Consent is enforced by the repository inside the write transaction:
+      // neither the controller nor the screen reads in-memory preferences.
+      for (final p in [screen, controller]) {
+        expect(lib[p]!.identifiers.intersection({'ConsentPreferences', 'InputModality', 'isEnabled'}), isEmpty,
+            reason: p);
+        expect(lib[p]!.projectDependencies, isNot(contains('lib/core/state/consent_preferences.dart')), reason: p);
+      }
+      // The controller writes only through WorkloadAccess.save.
+      expect(lib[controller]!.memberAccesses, containsAll(['save', 'loadDay']));
     });
 
     test('the app creates the owner (no global connection) and attaches the shared consent model', () {

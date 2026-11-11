@@ -28,7 +28,12 @@ class DirectiveFact {
   /// same-package URIs; null for `dart:` and other packages.
   final String? projectPath;
 
-  const DirectiveFact(this.kind, this.uri, this.projectPath);
+  /// Names listed in `show` combinators (Milestone K2), or null when the
+  /// directive has no `show` (everything is visible). Configurations of a
+  /// conditional directive share the directive's combinators.
+  final List<String>? shown;
+
+  const DirectiveFact(this.kind, this.uri, this.projectPath, [this.shown]);
 
   @override
   String toString() => '${kind.name} $uri';
@@ -46,7 +51,16 @@ class DartSourceFacts {
   /// `?..`), and object-pattern field names (`StorageReady(:final database)`).
   final Set<String> memberAccesses;
 
-  const DartSourceFacts._(this.path, this.directives, this.identifiers, this.memberAccesses);
+  /// How often each identifier occurs in code (Milestone K2).
+  final Map<String, int> identifierCounts;
+
+  /// For each call of an untargeted function or constructor (`f(...)`), where
+  /// the call sits: `Callee(label:)` when it is the named argument `label` of
+  /// a call to `Callee`, otherwise the parent node's type (Milestone K2).
+  final Map<String, Set<String>> callSites;
+
+  const DartSourceFacts._(
+      this.path, this.directives, this.identifiers, this.memberAccesses, this.identifierCounts, this.callSites);
 
   Iterable<String> get uris => directives.map((d) => d.uri);
   Iterable<DirectiveFact> of(DirectiveKind kind) => directives.where((d) => d.kind == kind);
@@ -63,10 +77,10 @@ class DartSourceFacts {
     final unit = result.unit;
 
     final directives = <DirectiveFact>[];
-    void add(DirectiveKind kind, StringLiteral literal) {
+    void add(DirectiveKind kind, StringLiteral literal, [List<String>? shown]) {
       final uri = literal.stringValue;
       if (uri == null) throw StateError('$normalized: a directive URI is not a constant string');
-      directives.add(DirectiveFact(kind, uri, _resolve(normalized, uri, packageName)));
+      directives.add(DirectiveFact(kind, uri, _resolve(normalized, uri, packageName), shown));
     }
 
     for (final d in unit.directives) {
@@ -77,19 +91,28 @@ class DartSourceFacts {
         _ => null,
       };
       if (kind == null || d is! UriBasedDirective) continue;
-      add(kind, d.uri);
+      List<String>? shown;
+      if (d is NamespaceDirective) {
+        final shows = d.combinators.whereType<ShowCombinator>().toList();
+        if (shows.isNotEmpty) {
+          shown = [for (final c in shows) for (final n in c.shownNames) n.name];
+        }
+      }
+      add(kind, d.uri, shown);
       if (d is NamespaceDirective) {
         for (final c in d.configurations) {
-          add(kind, c.uri);
+          add(kind, c.uri, shown);
         }
       }
     }
 
     final identifiers = <String>{};
+    final counts = <String, int>{};
     final members = <String>{};
     for (Token? t = unit.beginToken; t != null && !t.isEof; t = t.next) {
       if (!t.isIdentifier) continue;
       identifiers.add(t.lexeme);
+      counts[t.lexeme] = (counts[t.lexeme] ?? 0) + 1;
       final previous = t.previous?.type;
       if (previous == TokenType.PERIOD ||
           previous == TokenType.QUESTION_PERIOD ||
@@ -100,7 +123,9 @@ class DartSourceFacts {
     }
     // Object-pattern fields read a getter too: `StorageReady(:final database)`.
     unit.accept(_PatternFieldNames(members));
-    return DartSourceFacts._(normalized, List.unmodifiable(directives), identifiers, members);
+    final sites = <String, Set<String>>{};
+    unit.accept(_CallSites(sites));
+    return DartSourceFacts._(normalized, List.unmodifiable(directives), identifiers, members, counts, sites);
   }
 
   static String? _resolve(String from, String uri, String packageName) {
@@ -129,6 +154,31 @@ class _PatternFieldNames extends RecursiveAstVisitor<void> {
     final name = node.effectiveName;
     if (name != null) names.add(name);
     super.visitPatternField(node);
+  }
+}
+
+class _CallSites extends RecursiveAstVisitor<void> {
+  final Map<String, Set<String>> sites;
+  _CallSites(this.sites);
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    // Untargeted calls only: `f(...)`, not `x.f(...)` or `..f(...)`.
+    if (node.target == null && !node.isCascaded) {
+      final parent = node.parent;
+      String site = parent.runtimeType.toString();
+      if (parent is NamedArgument && parent.parent is ArgumentList) {
+        final owner = parent.parent!.parent;
+        final callee = switch (owner) {
+          MethodInvocation(:final methodName) => methodName.name,
+          InstanceCreationExpression(:final constructorName) => constructorName.toSource(),
+          _ => owner.runtimeType.toString(),
+        };
+        site = '$callee(${parent.name.lexeme}:)';
+      }
+      sites.putIfAbsent(node.methodName.name, () => {}).add(site);
+    }
+    super.visitMethodInvocation(node);
   }
 }
 

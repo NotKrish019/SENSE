@@ -1,42 +1,68 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../core/state/workload_controller.dart';
 import '../../core/theme/nature_tokens.dart';
 import '../nature/input_bands.dart';
 import '../nature/nature_inputs.dart';
 import '../nature/nature_widgets.dart';
+import '../widgets/sense_storage_scope.dart';
+import 'consent_screen.dart';
 
-/// Production Workload & demands (Living Landscapes, Phase 3).
+/// Production Workload & demands (Living Landscapes, Phase 3; persistence
+/// Milestone K2).
 ///
 /// A sunlit terraced hillside above three self-reported answers. Fields,
-/// ranges, defaults and wording are unchanged:
+/// ranges, defaults and wording follow ADR-009 Decision D:
 /// 1. mental demand, 1 to 5, default 3 (adapted from NASA-TLX; accessible
 ///    name "Mental demand", value "n of 5");
 /// 2. effort invested, 1 to 5, default 3 ("Effort");
-/// 3. impending deadlines in the next 48 hours: a count from 0 upwards,
-///    default 1, with "One fewer deadline" / "One more deadline" buttons.
+/// 3. impending deadlines in the next 48 hours: a count from 0 to 20,
+///    default 1, with "One fewer deadline" / "One more deadline" buttons
+///    (each disabled at its limit).
 /// The summary only restates the answers; no score is calculated.
-/// "Save Workload Rating" shows the honest "not saved" message.
+///
+/// Saving goes through [WorkloadController] and the app's storage owner
+/// (encrypted development storage only, in a debug build with the explicit
+/// define). When this build connects no storage, "Save Workload Rating"
+/// shows the honest prototype "not saved" message, as before. Success is
+/// shown only after the database transaction committed.
 class WorkloadScreen extends StatefulWidget {
-  const WorkloadScreen({super.key});
+  /// Injected for tests; normally created from the app's storage owner.
+  final WorkloadController? controller;
+
+  const WorkloadScreen({super.key, this.controller});
 
   @override
   State<WorkloadScreen> createState() => _WorkloadScreenState();
 }
 
 class _WorkloadScreenState extends State<WorkloadScreen> {
-  int _mentalDemand = 3; // 1 to 5
-  int _effortRating = 3; // 1 to 5
-  int _deadlinesCount = 1;
-  int _tasksCompleted = 4; // pre-existing, not shown or used (no task tracking)
+  WorkloadController? _controller;
+  bool _ownsController = false;
   final ScrollController _scroll = ScrollController();
+
+  WorkloadController get _c => _controller!;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_controller != null) return;
+    final injected = widget.controller;
+    _ownsController = injected == null;
+    _controller = injected ?? WorkloadController(access: workloadAccessOf(context));
+    unawaited(_c.start());
+  }
 
   @override
   void dispose() {
+    if (_ownsController) _controller?.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
-  String get _deadlines => '$_deadlinesCount deadline${_deadlinesCount == 1 ? '' : 's'}';
+  String _deadlinesLabel(int n) => '$n deadline${n == 1 ? '' : 's'}';
 
   @override
   Widget build(BuildContext context) {
@@ -49,86 +75,211 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
           onBack: () => Navigator.of(context).maybePop(),
           backLabel: 'Back',
           band: (desktop) => TerraceBand(tornBottom: desktop),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Workload', style: NatureType.eyebrow),
-              const SizedBox(height: 8),
-              const NatureHeading('Workload & demands'),
-              const SizedBox(height: 8),
-              const Text(
-                'Three self-reported answers. You choose each value; in this prototype '
-                'nothing is calculated from them.',
-                style: NatureType.bodyMuted,
-              ),
-              const SizedBox(height: 18),
-              _Ledger(demand: _mentalDemand, effort: _effortRating, deadlines: _deadlinesCount,
-                  deadlinesLabel: _deadlines),
-              const SizedBox(height: 28),
-              NatureQuestion(
-                number: 1,
-                title: 'Mental demand',
-                source: 'Adapted from NASA-TLX',
-                question:
-                    'How much mental and perceptual activity was required (thinking, deciding, calculating)?',
-                child: NatureSlider(
-                  semanticLabel: 'Mental demand',
-                  value: _mentalDemand,
-                  minLabel: '1 · Very light',
-                  maxLabel: '5 · Intense',
-                  onChanged: (v) => setState(() => _mentalDemand = v),
+          child: ListenableBuilder(
+            listenable: _c,
+            builder: (context, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Workload', style: NatureType.eyebrow),
+                const SizedBox(height: 8),
+                const NatureHeading('Workload & demands'),
+                const SizedBox(height: 8),
+                const Text(
+                  'Three self-reported answers. You choose each value; in this prototype '
+                  'nothing is calculated from them.',
+                  style: NatureType.bodyMuted,
                 ),
-              ),
-              const SizedBox(height: 28),
-              NatureQuestion(
-                number: 2,
-                title: 'Effort invested',
-                question: 'How hard did you have to work to accomplish your level of performance?',
-                child: NatureSlider(
-                  semanticLabel: 'Effort',
-                  value: _effortRating,
-                  minLabel: '1 · Minimal',
-                  maxLabel: '5 · Exhausting',
-                  onChanged: (v) => setState(() => _effortRating = v),
+                const SizedBox(height: 18),
+                _Ledger(demand: _c.mentalDemand, effort: _c.effort, deadlines: _c.deadlines,
+                    deadlinesLabel: _deadlinesLabel(_c.deadlines)),
+                const SizedBox(height: 28),
+                NatureQuestion(
+                  number: 1,
+                  title: 'Mental demand',
+                  source: 'Adapted from NASA-TLX',
+                  question:
+                      'How much mental and perceptual activity was required (thinking, deciding, calculating)?',
+                  child: NatureSlider(
+                    semanticLabel: 'Mental demand',
+                    value: _c.mentalDemand,
+                    minLabel: '1 · Very light',
+                    maxLabel: '5 · Intense',
+                    onChanged: _c.setMentalDemand,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 28),
-              NatureQuestion(
-                number: 3,
-                title: 'Impending deadlines',
-                question: 'Upcoming deliverables in the next 48 hours.',
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    const Text('Upcoming deliverables:', style: NatureType.label),
-                    NatureCountStepper(
-                      count: _deadlinesCount,
-                      valueLabel: _deadlines,
-                      decrementLabel: 'One fewer deadline',
-                      incrementLabel: 'One more deadline',
-                      onDecrement: _deadlinesCount > 0 ? () => setState(() => _deadlinesCount--) : null,
-                      onIncrement: () => setState(() => _deadlinesCount++),
-                    ),
-                  ],
+                const SizedBox(height: 28),
+                NatureQuestion(
+                  number: 2,
+                  title: 'Effort invested',
+                  question: 'How hard did you have to work to accomplish your level of performance?',
+                  child: NatureSlider(
+                    semanticLabel: 'Effort',
+                    value: _c.effort,
+                    minLabel: '1 · Minimal',
+                    maxLabel: '5 · Exhausting',
+                    onChanged: _c.setEffort,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 30),
-              const NatureNotSavedNote(),
-              const SizedBox(height: 16),
-              NaturePrintedAction(label: 'Save Workload Rating', icon: null, onTap: _saveWorkload),
-            ],
+                const SizedBox(height: 28),
+                NatureQuestion(
+                  number: 3,
+                  title: 'Impending deadlines',
+                  question: 'Upcoming deliverables in the next 48 hours.',
+                  child: Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
+                      const Text('Upcoming deliverables:', style: NatureType.label),
+                      NatureCountStepper(
+                        count: _c.deadlines,
+                        valueLabel: _deadlinesLabel(_c.deadlines),
+                        decrementLabel: 'One fewer deadline',
+                        incrementLabel: 'One more deadline',
+                        onDecrement: _c.canDecrementDeadlines ? _c.decrementDeadlines : null,
+                        onIncrement: _c.canIncrementDeadlines ? _c.incrementDeadlines : null,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                if (_c.persistenceConnected)
+                  _WorkloadStatus(controller: _c, onReviewConsent: _openConsent)
+                else
+                  const NatureNotSavedNote(),
+                const SizedBox(height: 16),
+                NaturePrintedAction(
+                  label: 'Save Workload Rating',
+                  icon: null,
+                  onTap: _c.canSave ? _saveWorkload : null,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _saveWorkload() {
-    // Persistence is not connected yet: report that honestly.
-    showNatureNotSavedMessage(context, 'workload rating');
+  void _openConsent() => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ConsentScreen(isSettingsMode: true)),
+      );
+
+  Future<void> _saveWorkload() async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final result = await _c.save();
+    if (!mounted) return;
+    if (result == WorkloadSaveResult.notConnected) {
+      // Persistence is not connected in this build: report that honestly.
+      showNatureNotSavedMessage(context, 'workload rating');
+      return;
+    }
+    final message = _WorkloadStatus.messageFor(result, development: _c.isDevelopment);
+    if (message == null) return;
+    messenger
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message, style: NatureType.body.copyWith(color: NatureColors.paper)),
+        backgroundColor: NatureColors.ink,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: NatureRadii.smBorder),
+        duration: const Duration(seconds: 4),
+      ));
+  }
+}
+
+/// An honest, live status line under the form: where the entry is kept and
+/// what the last save actually did (Milestone K2).
+class _WorkloadStatus extends StatelessWidget {
+  final WorkloadController controller;
+  final VoidCallback onReviewConsent;
+  const _WorkloadStatus({required this.controller, required this.onReviewConsent});
+
+  static String savedText(bool development) => development
+      ? "Today's workload entry was saved in development storage. Development data, not for participants."
+      : "Today's workload entry was saved on this device.";
+  static const String updatedText = "Today's workload entry was updated.";
+  static const String consentDeniedText =
+      'Workload is turned off in your data and consent preferences, so nothing was saved.';
+  static const String unavailableText =
+      'Secure storage is unavailable, so your workload rating cannot be saved right now. Nothing was saved.';
+  static const String failedText =
+      'Your workload rating could not be saved. Your answers are still here, so you can try again.';
+  static const String dayChangedText =
+      "The date changed, so nothing was saved. The form now shows today's entry.";
+
+  /// The message after a save, or null when there is nothing to report.
+  static String? messageFor(WorkloadSaveResult r, {required bool development}) => switch (r) {
+        WorkloadSaveResult.saved => savedText(development),
+        WorkloadSaveResult.updated => updatedText,
+        WorkloadSaveResult.consentDenied => consentDeniedText,
+        WorkloadSaveResult.storageUnavailable => unavailableText,
+        WorkloadSaveResult.failed => failedText,
+        WorkloadSaveResult.dayChanged => dayChangedText,
+        WorkloadSaveResult.notConnected || WorkloadSaveResult.notReady => null,
+      };
+
+  String get _text {
+    final c = controller;
+    final where = c.isDevelopment
+        ? 'Saving keeps this entry in encrypted development storage on this device (development data, '
+            'not for participants).'
+        : 'Saving keeps this entry in encrypted storage on this device.';
+    return switch (c.phase) {
+      WorkloadPhase.idle || WorkloadPhase.loading => "Loading today's entry.",
+      WorkloadPhase.editing => c.hasExistingEntry
+          ? "You already saved a workload entry today. It is shown here; saving replaces it. $where"
+          : 'No workload entry saved today yet. $where Workload must be turned on in your data and consent '
+              'preferences.',
+      WorkloadPhase.saving => 'Saving your workload rating.',
+      WorkloadPhase.saved => savedText(c.isDevelopment),
+      WorkloadPhase.updated => updatedText,
+      WorkloadPhase.consentDenied => consentDeniedText,
+      WorkloadPhase.storageUnavailable => unavailableText,
+      WorkloadPhase.failed => c.todayLoaded
+          ? failedText
+          : "Today's saved entry could not be read. Saving reads it again first.",
+      WorkloadPhase.notConnected => '',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final busy = controller.isBusy;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          container: true,
+          liveRegion: true,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: ExcludeSemantics(
+                  // A static indicator: nothing animates while waiting.
+                  child: busy
+                      ? const Icon(Icons.hourglass_empty_rounded,
+                          key: Key('workload-busy'), size: 17, color: NatureColors.inkMuted)
+                      : const Icon(Icons.info_outline_rounded, size: 17, color: NatureColors.inkMuted),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(_text,
+                    key: const Key('workload-status'), style: NatureType.bodyMuted.copyWith(fontSize: 13)),
+              ),
+            ],
+          ),
+        ),
+        if (controller.phase == WorkloadPhase.consentDenied) ...[
+          const SizedBox(height: 4),
+          NatureTextLink(label: 'Review data and consent preferences', onTap: onReviewConsent),
+        ],
+      ],
+    );
   }
 }
 

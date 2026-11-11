@@ -663,9 +663,12 @@ void main() {
       // Milestone K1: only the app entry point, the consent model and the
       // storage scope may reach the data layer, and only through the storage
       // owner (never the repositories, schema or database helpers directly).
+      // Milestone K2 adds the Workload controller, which reaches workload
+      // records only through the narrow WorkloadAccess re-exported there.
       const allowed = {
         'lib/main.dart',
         'lib/core/state/consent_preferences.dart',
+        'lib/core/state/workload_controller.dart',
         'lib/presentation/widgets/sense_storage_scope.dart',
       };
       final appFiles = lib.values.where((f) => !f.path.startsWith('lib/data/')).toList();
