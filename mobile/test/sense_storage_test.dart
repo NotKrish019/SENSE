@@ -461,7 +461,9 @@ void main() {
           'openDatabase', 'LocalProfileRepository', 'DailyRecordRepository', 'ConsentRepository',
           'SqliteLocalProfileRepository', 'SqliteDailyRecordRepository', 'SqliteConsentRepository',
           // Milestone K2: the service bound to the connection stays inside the owner.
-          'WorkloadRecordService', 'WorkloadRepository'};
+          'WorkloadRecordService', 'WorkloadRepository',
+          // Milestone K3: likewise for check-ins.
+          'CheckInRecordService', 'CheckInRepository'};
       // The consent model is the one non-data reader of the ready store: it
       // reads the consent snapshot and appends consent events, nothing else.
       const consentModel = 'lib/core/state/consent_preferences.dart';
@@ -493,24 +495,29 @@ void main() {
       expect(src, contains("String.fromEnvironment('SENSE_DEV_STORAGE') == '1'"));
     });
 
-    test('Check-in and Sleep Save handlers remain disconnected', () {
-      for (final screen in ['check_in_screen.dart', 'sleep_screen.dart']) {
-        final src = read('lib/presentation/screens/$screen');
-        final facts = lib['lib/presentation/screens/$screen']!;
-        expect(facts.identifiers.intersection({'SenseStorage', 'WorkloadController', 'workloadAccessOf'}), isEmpty,
-            reason: screen);
-        expect(facts.memberAccesses, isNot(contains('upsert')), reason: screen);
-        expect(src, contains('NatureNotSavedNote'), reason: screen);
-      }
-      expect(read('lib/presentation/screens/sleep_screen.dart'), contains("showNatureNotSavedMessage(context, 'sleep entry')"));
+    test('Sleep Save handler remains disconnected', () {
+      const screen = 'lib/presentation/screens/sleep_screen.dart';
+      final facts = lib[screen]!;
+      expect(
+          facts.identifiers.intersection({
+            'SenseStorage', 'SenseStorageScope', 'WorkloadController', 'workloadAccessOf', 'CheckInController',
+            'checkInAccessOf',
+          }),
+          isEmpty);
+      expect(facts.memberAccesses, isNot(contains('upsert')));
+      expect(read(screen), contains('NatureNotSavedNote'));
+      expect(read(screen), contains("showNatureNotSavedMessage(context, 'sleep entry')"));
     });
 
     // ---- Milestone K2: Workload persistence boundary ---------------------------------------
     test('K2: the storage owner re-exports only the narrow workload surface (show lists, no store or database)', () {
       final owner = lib['lib/data/local/sense_storage.dart']!;
       final exports = owner.of(DirectiveKind.export).toList();
-      expect(exports.map((e) => e.projectPath).toSet(),
-          {'lib/data/local/local_data_store.dart', 'lib/data/local/workload_records.dart'});
+      expect(exports.map((e) => e.projectPath).toSet(), {
+        'lib/data/local/local_data_store.dart',
+        'lib/data/local/workload_records.dart',
+        'lib/data/local/check_in_records.dart', // Milestone K3
+      });
       for (final e in exports) {
         expect(e.shown, isNotNull, reason: '${e.uri} must use an explicit show list');
       }
@@ -519,10 +526,49 @@ void main() {
         'Database', 'DatabaseExecutor', 'LocalDataStore', 'SenseDatabase', 'WorkloadRecordService',
         'WorkloadRepository', 'DailyRecordRepository', 'ConsentRepository', 'LocalProfileRepository',
         'SqliteDailyRecordRepository', 'LocalDataService', 'requireConsent', 'ConsentEvent',
+        'CheckInRecordService', 'CheckInRepository',
       }), isEmpty);
       // The workload service is built only by the owner.
       final builders = lib.values.where((f) => f.identifiers.contains('WorkloadRecordService')).map((f) => f.path);
       expect(builders.toSet(), {'lib/data/local/sense_storage.dart', 'lib/data/local/workload_records.dart'});
+      final checkInBuilders =
+          lib.values.where((f) => f.identifiers.contains('CheckInRecordService')).map((f) => f.path);
+      expect(checkInBuilders.toSet(), {'lib/data/local/sense_storage.dart', 'lib/data/local/check_in_records.dart'});
+    });
+
+    // ---- Milestone K3: Check-in persistence boundary ---------------------------------------
+    test('K3: Check-in saves only through CheckInController and CheckInAccess (no screen-level consent gate)', () {
+      const screen = 'lib/presentation/screens/check_in_screen.dart';
+      const controller = 'lib/core/state/check_in_controller.dart';
+      const scope = 'lib/presentation/widgets/sense_storage_scope.dart';
+      final s = lib[screen]!;
+      expect(s.identifiers, containsAll(['CheckInController', 'checkInAccessOf']));
+      expect(
+          s.identifiers.intersection({'CheckInAccess', 'CheckInEntry', 'SenseStorage', 'SenseStorageScope'}), isEmpty);
+      // The screen's one use of the access is handing it to its controller.
+      expect(s.identifierCounts['checkInAccessOf'], 1);
+      expect(s.callSites['checkInAccessOf'], {'CheckInController(access:)'});
+      // Only these files touch the check-in access surface.
+      final users = lib.values
+          .where((f) => !f.path.startsWith('lib/data/'))
+          .where((f) => f.identifiers.intersection({'CheckInAccess', 'checkInAccessOf'}).isNotEmpty)
+          .map((f) => f.path)
+          .toSet();
+      expect(users, {screen, controller, scope});
+      // Consent is enforced by the repository inside the write transaction:
+      // neither the controller nor the screen reads in-memory preferences.
+      for (final p in [screen, controller]) {
+        expect(lib[p]!.identifiers.intersection({'ConsentPreferences', 'InputModality', 'isEnabled'}), isEmpty,
+            reason: p);
+        expect(lib[p]!.projectDependencies, isNot(contains('lib/core/state/consent_preferences.dart')), reason: p);
+      }
+      expect(lib[controller]!.memberAccesses, containsAll(['save', 'loadDay']));
+      // Check-in and Workload stay separate: neither screen reaches the other's surface.
+      expect(s.identifiers.intersection({'WorkloadController', 'workloadAccessOf', 'WorkloadAccess'}), isEmpty);
+      expect(lib['lib/presentation/screens/workload_screen.dart']!
+              .identifiers
+              .intersection({'CheckInController', 'checkInAccessOf', 'CheckInAccess'}),
+          isEmpty);
     });
 
     test('K2: Workload saves only through WorkloadController and WorkloadAccess (no screen-level consent gate)', () {

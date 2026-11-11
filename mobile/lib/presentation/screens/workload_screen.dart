@@ -52,11 +52,20 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
     final injected = widget.controller;
     _ownsController = injected == null;
     _controller = injected ?? WorkloadController(access: workloadAccessOf(context));
+    _c.addListener(_onController);
     unawaited(_c.start());
+  }
+
+  /// Rebuilds the page chrome (back control, system back) when saving starts
+  /// or ends; the form itself rebuilds through its ListenableBuilder.
+  bool _wasSaving = false;
+  void _onController() {
+    if (_c.isSaving != _wasSaving && mounted) setState(() => _wasSaving = _c.isSaving);
   }
 
   @override
   void dispose() {
+    _controller?.removeListener(_onController);
     if (_ownsController) _controller?.dispose();
     _scroll.dispose();
     super.dispose();
@@ -66,95 +75,102 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: NatureTheme.light,
-      child: Scaffold(
-        backgroundColor: NatureColors.background,
-        body: NatureJournalPage(
-          controller: _scroll,
-          onBack: () => Navigator.of(context).maybePop(),
-          backLabel: 'Back',
-          band: (desktop) => TerraceBand(tornBottom: desktop),
-          child: ListenableBuilder(
-            listenable: _c,
-            builder: (context, _) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Workload', style: NatureType.eyebrow),
-                const SizedBox(height: 8),
-                const NatureHeading('Workload & demands'),
-                const SizedBox(height: 8),
-                const Text(
-                  'Three self-reported answers. You choose each value; in this prototype '
-                  'nothing is calculated from them.',
-                  style: NatureType.bodyMuted,
-                ),
-                const SizedBox(height: 18),
-                _Ledger(demand: _c.mentalDemand, effort: _c.effort, deadlines: _c.deadlines,
-                    deadlinesLabel: _deadlinesLabel(_c.deadlines)),
-                const SizedBox(height: 28),
-                NatureQuestion(
-                  number: 1,
-                  title: 'Mental demand',
-                  source: 'Adapted from NASA-TLX',
-                  question:
-                      'How much mental and perceptual activity was required (thinking, deciding, calculating)?',
-                  child: NatureSlider(
-                    semanticLabel: 'Mental demand',
-                    value: _c.mentalDemand,
-                    minLabel: '1 · Very light',
-                    maxLabel: '5 · Intense',
-                    onChanged: _c.setMentalDemand,
+    final saving = _c.isSaving;
+    // Leaving (back control or system back) cannot discard a save in flight.
+    return PopScope(
+      canPop: !saving,
+      child: Theme(
+        data: NatureTheme.light,
+        child: Scaffold(
+          backgroundColor: NatureColors.background,
+          body: NatureJournalPage(
+            controller: _scroll,
+            onBack: () => Navigator.of(context).maybePop(),
+            backEnabled: !saving,
+            backLabel: 'Back',
+            band: (desktop) => TerraceBand(tornBottom: desktop),
+            child: ListenableBuilder(
+              listenable: _c,
+              builder: (context, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Workload', style: NatureType.eyebrow),
+                  const SizedBox(height: 8),
+                  const NatureHeading('Workload & demands'),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Three self-reported answers. You choose each value; in this prototype '
+                    'nothing is calculated from them.',
+                    style: NatureType.bodyMuted,
                   ),
-                ),
-                const SizedBox(height: 28),
-                NatureQuestion(
-                  number: 2,
-                  title: 'Effort invested',
-                  question: 'How hard did you have to work to accomplish your level of performance?',
-                  child: NatureSlider(
-                    semanticLabel: 'Effort',
-                    value: _c.effort,
-                    minLabel: '1 · Minimal',
-                    maxLabel: '5 · Exhausting',
-                    onChanged: _c.setEffort,
+                  const SizedBox(height: 18),
+                  _Ledger(demand: _c.mentalDemand, effort: _c.effort, deadlines: _c.deadlines,
+                      deadlinesLabel: _deadlinesLabel(_c.deadlines)),
+                  const SizedBox(height: 28),
+                  NatureQuestion(
+                    number: 1,
+                    title: 'Mental demand',
+                    source: 'Adapted from NASA-TLX',
+                    question:
+                        'How much mental and perceptual activity was required (thinking, deciding, calculating)?',
+                    child: NatureSlider(
+                      semanticLabel: 'Mental demand',
+                      value: _c.mentalDemand,
+                      minLabel: '1 · Very light',
+                      maxLabel: '5 · Intense',
+                      // Locked while saving: what is on screen is what is written.
+                      onChanged: _c.isSaving ? null : _c.setMentalDemand,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 28),
-                NatureQuestion(
-                  number: 3,
-                  title: 'Impending deadlines',
-                  question: 'Upcoming deliverables in the next 48 hours.',
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      const Text('Upcoming deliverables:', style: NatureType.label),
-                      NatureCountStepper(
-                        count: _c.deadlines,
-                        valueLabel: _deadlinesLabel(_c.deadlines),
-                        decrementLabel: 'One fewer deadline',
-                        incrementLabel: 'One more deadline',
-                        onDecrement: _c.canDecrementDeadlines ? _c.decrementDeadlines : null,
-                        onIncrement: _c.canIncrementDeadlines ? _c.incrementDeadlines : null,
-                      ),
-                    ],
+                  const SizedBox(height: 28),
+                  NatureQuestion(
+                    number: 2,
+                    title: 'Effort invested',
+                    question: 'How hard did you have to work to accomplish your level of performance?',
+                    child: NatureSlider(
+                      semanticLabel: 'Effort',
+                      value: _c.effort,
+                      minLabel: '1 · Minimal',
+                      maxLabel: '5 · Exhausting',
+                      onChanged: _c.isSaving ? null : _c.setEffort,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 30),
-                if (_c.persistenceConnected)
-                  _WorkloadStatus(controller: _c, onReviewConsent: _openConsent)
-                else
-                  const NatureNotSavedNote(),
-                const SizedBox(height: 16),
-                NaturePrintedAction(
-                  label: 'Save Workload Rating',
-                  icon: null,
-                  onTap: _c.canSave ? _saveWorkload : null,
-                ),
-              ],
+                  const SizedBox(height: 28),
+                  NatureQuestion(
+                    number: 3,
+                    title: 'Impending deadlines',
+                    question: 'Upcoming deliverables in the next 48 hours.',
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
+                      children: [
+                        const Text('Upcoming deliverables:', style: NatureType.label),
+                        NatureCountStepper(
+                          count: _c.deadlines,
+                          valueLabel: _deadlinesLabel(_c.deadlines),
+                          decrementLabel: 'One fewer deadline',
+                          incrementLabel: 'One more deadline',
+                          onDecrement: _c.canDecrementDeadlines ? _c.decrementDeadlines : null,
+                          onIncrement: _c.canIncrementDeadlines ? _c.incrementDeadlines : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  if (_c.persistenceConnected)
+                    _WorkloadStatus(controller: _c, onReviewConsent: _openConsent)
+                  else
+                    const NatureNotSavedNote(),
+                  const SizedBox(height: 16),
+                  NaturePrintedAction(
+                    label: 'Save Workload Rating',
+                    icon: null,
+                    onTap: _c.canSave ? _saveWorkload : null,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -77,3 +77,9 @@ class DevelopmentStorageBanner extends StatelessWidget {
     );
   }
 }
+
+/// The narrow check-in operations for the Check-in screen (Milestone K3), or
+/// null when there is no storage owner above [context]. Same rules as
+/// [workloadAccessOf]: typed load and save only, no dependency registered.
+CheckInAccess? checkInAccessOf(BuildContext context) =>
+    context.getInheritedWidgetOfExactType<SenseStorageScope>()?.notifier?.checkIn;

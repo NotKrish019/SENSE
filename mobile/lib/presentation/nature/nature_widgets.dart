@@ -246,6 +246,10 @@ class NatureJournalPage extends StatelessWidget {
   /// Accessible name and tooltip of the back control.
   final String backLabel;
 
+  /// False shows the back control disabled (for example while a save is in
+  /// progress, so leaving cannot discard it). It stays visible and in place.
+  final bool backEnabled;
+
   /// The illustrated band behind the top of the sheet; receives whether the
   /// desktop composition is in use. Defaults to [StillWaterBand].
   final Widget Function(bool desktop)? band;
@@ -261,6 +265,7 @@ class NatureJournalPage extends StatelessWidget {
     required this.child,
     this.onBack,
     this.backLabel = 'Back to Home',
+    this.backEnabled = true,
     this.band,
     this.maxSheetWidth = NatureBreakpoints.maxReading + 40,
   });
@@ -274,7 +279,8 @@ class NatureJournalPage extends StatelessWidget {
     return LayoutBuilder(builder: (context, c) {
       final width = c.maxWidth;
       final desktop = width >= NatureBreakpoints.desktop;
-      final back = onBack == null ? null : NatureBackControl(onTap: onBack!, label: backLabel);
+      final back =
+          onBack == null ? null : NatureBackControl(onTap: backEnabled ? onBack! : null, label: backLabel);
 
       if (desktop) {
         // As on Home: the scene spans the window with a torn paper edge where
@@ -344,7 +350,9 @@ class NatureJournalPage extends StatelessWidget {
 }
 
 class NatureBackControl extends StatelessWidget {
-  final VoidCallback onTap;
+  /// Null disables the control (announced as disabled), for example while a
+  /// save is in progress.
+  final VoidCallback? onTap;
   final String label;
   const NatureBackControl({super.key, required this.onTap, this.label = 'Back to Home'});
 
@@ -365,7 +373,7 @@ class NatureBackControl extends StatelessWidget {
           color: NatureColors.paper.withValues(alpha: 0.88),
           border: Border.all(color: NatureColors.borderStrong),
         ),
-        child: const Icon(Icons.arrow_back_rounded, color: NatureColors.ink, size: 22),
+        child: Icon(Icons.arrow_back_rounded, color: onTap == null ? NatureColors.inkMuted : NatureColors.ink, size: 22),
       ),
     );
   }
@@ -539,7 +547,9 @@ class NatureSlider extends StatelessWidget {
   final int value;
   final String minLabel;
   final String maxLabel;
-  final ValueChanged<int> onChanged;
+
+  /// Null disables the slider (announced as disabled).
+  final ValueChanged<int>? onChanged;
   final bool warm;
   const NatureSlider({super.key,
     required this.semanticLabel,
@@ -587,7 +597,7 @@ class NatureSlider extends StatelessWidget {
                 min: 1,
                 max: 5,
                 divisions: 4,
-                onChanged: (v) => onChanged(v.round()),
+                onChanged: onChanged == null ? null : (v) => onChanged!(v.round()),
               ),
             ),
           ),

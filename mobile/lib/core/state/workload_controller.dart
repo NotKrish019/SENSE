@@ -130,9 +130,13 @@ class WorkloadController extends ChangeNotifier {
   bool get todayLoaded => _loaded;
 
   bool get isBusy => _phase == WorkloadPhase.loading || _phase == WorkloadPhase.saving;
+
+  /// True while a save is in progress: the values are locked, so what is on
+  /// screen is exactly what is being written.
+  bool get isSaving => _phase == WorkloadPhase.saving;
   bool get canSave => !isBusy && _phase != WorkloadPhase.idle;
-  bool get canIncrementDeadlines => _deadlines < maxDeadlines;
-  bool get canDecrementDeadlines => _deadlines > minDeadlines;
+  bool get canIncrementDeadlines => !isSaving && _deadlines < maxDeadlines;
+  bool get canDecrementDeadlines => !isSaving && _deadlines > minDeadlines;
 
   /// The fields that will be recorded as changed by the next save.
   Set<String> get changedFields {
@@ -253,6 +257,8 @@ class WorkloadController extends ChangeNotifier {
   static int _clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
 
   void _change(String field, int value) {
+    // Locked while saving: the values being written are the ones on screen.
+    if (_phase == WorkloadPhase.saving) return;
     if (_values[field] == value) return;
     switch (field) {
       case fieldMentalDemand:

@@ -33,12 +33,29 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqlite_api.dart';
 
 import 'encrypted/encrypted_database.dart';
+import 'check_in_records.dart';
 import 'local_data_store.dart';
 import 'workload_records.dart';
 
-// Milestone K2: the narrow workload surface and the record types it carries.
+// Milestones K2 and K3: the narrow workload and check-in surfaces and the
+// record types they carry.
 // Only these are re-exported; the database, store and repositories are not.
-export 'local_data_store.dart' show WorkloadEntry, LocalDay, Provenance, StoredRecord, ConsentDenialReason;
+export 'check_in_records.dart'
+    show
+        CheckInAccess,
+        CheckInStorageStatus,
+        CheckInLoadOutcome,
+        CheckInLoaded,
+        CheckInLoadUnavailable,
+        CheckInLoadFailed,
+        CheckInSaveOutcome,
+        CheckInSaved,
+        CheckInConsentDenied,
+        CheckInSaveUnavailable,
+        CheckInSaveInvalid,
+        CheckInSaveFailed;
+export 'local_data_store.dart'
+    show WorkloadEntry, CheckInEntry, LocalDay, Provenance, StoredRecord, ConsentDenialReason;
 export 'workload_records.dart'
     show
         WorkloadAccess,
@@ -234,6 +251,10 @@ class SenseStorage extends ChangeNotifier {
   /// owner's state; never exposes the database, store or repositories.
   late final WorkloadAccess workload = _StorageWorkloadAccess(this);
 
+  /// The narrow check-in operations for screens (Milestone K3). Follows this
+  /// owner's state; never exposes the database, store or repositories.
+  late final CheckInAccess checkIn = _StorageCheckInAccess(this);
+
   void _set(SenseStorageState s) {
     _state = s;
     if (!_disposed) notifyListeners();
@@ -417,6 +438,53 @@ class _StorageWorkloadAccess implements WorkloadAccess {
   @override
   Future<WorkloadSaveOutcome> save(WorkloadEntry entry) async =>
       await _current()?.save(entry) ?? const WorkloadSaveUnavailable();
+
+  @override
+  void addListener(void Function() listener) => _owner.addListener(listener);
+
+  @override
+  void removeListener(void Function() listener) => _owner.removeListener(listener);
+}
+
+/// [CheckInAccess] over the owner's current state (Milestone K3), the same
+/// way as [_StorageWorkloadAccess]: each call uses the connection that is
+/// ready at that moment, and never opens anything.
+class _StorageCheckInAccess implements CheckInAccess {
+  final SenseStorage _owner;
+  StorageReady? _boundTo;
+  CheckInRecordService? _service;
+
+  _StorageCheckInAccess(this._owner);
+
+  CheckInRecordService? _current() {
+    final r = _owner.ready;
+    if (r == null) return null;
+    if (!identical(r, _boundTo)) {
+      _boundTo = r;
+      _service = CheckInRecordService(r.database, r.profile.localPersonId, clock: _owner._clock, ids: _owner._ids);
+    }
+    return _service;
+  }
+
+  @override
+  CheckInStorageStatus get status => switch (_owner.state) {
+        StorageReady() => CheckInStorageStatus.open,
+        StorageOpening() => CheckInStorageStatus.opening,
+        StorageUnavailable(:final reason) =>
+          reason.isFailure ? CheckInStorageStatus.unavailable : CheckInStorageStatus.notConnected,
+        StorageClosed() => CheckInStorageStatus.unavailable,
+      };
+
+  @override
+  bool get isDevelopment => _owner.ready?.isDevelopment ?? _owner.developmentStorageEnabled;
+
+  @override
+  Future<CheckInLoadOutcome> loadDay(String localDate) async =>
+      await _current()?.loadDay(localDate) ?? const CheckInLoadUnavailable();
+
+  @override
+  Future<CheckInSaveOutcome> save(CheckInEntry entry) async =>
+      await _current()?.save(entry) ?? const CheckInSaveUnavailable();
 
   @override
   void addListener(void Function() listener) => _owner.addListener(listener);

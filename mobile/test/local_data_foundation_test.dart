@@ -669,6 +669,8 @@ void main() {
         'lib/main.dart',
         'lib/core/state/consent_preferences.dart',
         'lib/core/state/workload_controller.dart',
+        // Milestone K3: the Check-in controller, through the narrow CheckInAccess.
+        'lib/core/state/check_in_controller.dart',
         'lib/presentation/widgets/sense_storage_scope.dart',
       };
       final appFiles = lib.values.where((f) => !f.path.startsWith('lib/data/')).toList();

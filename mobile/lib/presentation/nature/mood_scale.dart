@@ -23,7 +23,9 @@ class MoodScale extends StatelessWidget {
   /// `CheckInScreen.moodOptions`; nothing here defines the mood model.
   final List<({int value, String label})> options;
   final int selected;
-  final ValueChanged<int> onSelected;
+
+  /// Null disables every option (for example while a check-in is saving).
+  final ValueChanged<int>? onSelected;
   const MoodScale(
       {super.key, required this.options, required this.selected, required this.onSelected});
 
@@ -80,7 +82,7 @@ class MoodScale extends StatelessWidget {
                 width: tileW,
                 height: tileH,
                 glyphSize: glyph,
-                onTap: () => onSelected(o.value),
+                onTap: onSelected == null ? null : () => onSelected!(o.value),
               ),
           ],
         );
@@ -101,7 +103,7 @@ class MoodScale extends StatelessWidget {
               height: rowH,
               glyphSize: glyph,
               horizontal: true,
-              onTap: () => onSelected(o.value),
+              onTap: onSelected == null ? null : () => onSelected!(o.value),
             ),
           ],
         ],
@@ -119,7 +121,9 @@ class MoodTile extends StatefulWidget {
   final bool selected;
   final double width, height, glyphSize;
   final bool horizontal; // list layout: symbol left, label right
-  final VoidCallback onTap;
+
+  /// Null disables the option (announced as disabled).
+  final VoidCallback? onTap;
   const MoodTile({
     super.key,
     required this.value,

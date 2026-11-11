@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mindpulse/data/local/local_data_store.dart' show CheckInEntry;
 import 'package:mindpulse/core/state/consent_preferences.dart';
 import 'package:mindpulse/core/theme/app_theme.dart';
 import 'package:mindpulse/presentation/redesign/mood_glyph.dart';
@@ -81,10 +82,18 @@ void main() {
     test('Defaults match production (mood 3, stress 2, motivation 3)', () {
       final prod = File('lib/presentation/screens/check_in_screen.dart').readAsStringSync();
       final proto = File('lib/presentation/redesign/nature_check_in_preview.dart').readAsStringSync();
-      for (final field in ['_selectedMood', '_perceivedStress', '_motivationLevel', '_currentStep']) {
-        final re = RegExp('int $field = (\\d);');
-        expect(re.firstMatch(proto)!.group(1), re.firstMatch(prod)!.group(1), reason: field);
+      int? value(String src, String field) => int.tryParse(RegExp('int $field = (\\d);').firstMatch(src)?.group(1) ?? '');
+      // Since Milestone K3 the production answers live in CheckInController,
+      // which starts from the domain model's initial values.
+      const model = {
+        '_selectedMood': 'mood_rating',
+        '_perceivedStress': 'perceived_stress_rating',
+        '_motivationLevel': 'motivation_energy_rating',
+      };
+      for (final e in model.entries) {
+        expect(value(proto, e.key), CheckInEntry.initialValues[e.value], reason: e.key);
       }
+      expect(value(proto, '_currentStep'), value(prod, '_currentStep'), reason: '_currentStep');
     });
 
     testWidgets('Production check-in now uses the approved symbols, not emoji (Phase 1)',
