@@ -89,3 +89,9 @@ CheckInAccess? checkInAccessOf(BuildContext context) =>
 /// [workloadAccessOf]: typed reads and save only, no dependency registered.
 SleepAccess? sleepAccessOf(BuildContext context) =>
     context.getInheritedWidgetOfExactType<SenseStorageScope>()?.notifier?.sleep;
+
+/// The narrow, read-only observation surface for the Insights screen, or null
+/// when there is no storage owner above [context]. Same rules as
+/// [workloadAccessOf]: typed reads only, no dependency registered.
+InsightsAccess? insightsAccessOf(BuildContext context) =>
+    context.getInheritedWidgetOfExactType<SenseStorageScope>()?.notifier?.insights;

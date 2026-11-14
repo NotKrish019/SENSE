@@ -465,7 +465,9 @@ void main() {
           // Milestone K3: likewise for check-ins.
           'CheckInRecordService', 'CheckInRepository',
           // Milestone K4: likewise for sleep.
-          'SleepRecordService', 'SleepRepository'};
+          'SleepRecordService', 'SleepRepository',
+          // Milestone E: the observation reader stays inside the owner too.
+          'ObservationRecordService'};
       // The consent model is the one non-data reader of the ready store: it
       // reads the consent snapshot and appends consent events, nothing else.
       const consentModel = 'lib/core/state/consent_preferences.dart';
@@ -504,11 +506,13 @@ void main() {
         'WorkloadController', 'workloadAccessOf', 'WorkloadAccess',
         'CheckInController', 'checkInAccessOf', 'CheckInAccess',
         'SleepController', 'sleepAccessOf', 'SleepAccess',
+        'InsightsController', 'insightsAccessOf', 'InsightsAccess',
       };
       for (final screen in ['journal_screen.dart', 'voice_screen.dart', 'activity_screen.dart']) {
         final facts = lib['lib/presentation/screens/$screen']!;
         expect(facts.identifiers.intersection(surfaces), isEmpty, reason: screen);
-        expect(facts.memberAccesses.intersection({'upsert', 'save', 'loadDay', 'loadRange'}), isEmpty, reason: screen);
+        expect(facts.memberAccesses.intersection({'upsert', 'save', 'loadDay', 'loadRange', 'loadWindow'}), isEmpty,
+            reason: screen);
         expect(facts.projectDependencies.where((d) => d.startsWith('lib/core/state/') && d != 'lib/core/state/consent_preferences.dart'),
             isEmpty, reason: screen);
       }
@@ -523,6 +527,7 @@ void main() {
         'lib/data/local/workload_records.dart',
         'lib/data/local/check_in_records.dart', // Milestone K3
         'lib/data/local/sleep_records.dart', // Milestone K4
+        'lib/data/local/insights_records.dart', // Milestone E
       });
       for (final e in exports) {
         expect(e.shown, isNotNull, reason: '${e.uri} must use an explicit show list');
@@ -533,6 +538,7 @@ void main() {
         'WorkloadRepository', 'DailyRecordRepository', 'ConsentRepository', 'LocalProfileRepository',
         'SqliteDailyRecordRepository', 'LocalDataService', 'requireConsent', 'ConsentEvent',
         'CheckInRecordService', 'CheckInRepository', 'SleepRecordService', 'SleepRepository',
+        'ObservationRecordService',
       }), isEmpty);
       // The workload service is built only by the owner.
       final builders = lib.values.where((f) => f.identifiers.contains('WorkloadRecordService')).map((f) => f.path);
@@ -542,6 +548,49 @@ void main() {
       expect(checkInBuilders.toSet(), {'lib/data/local/sense_storage.dart', 'lib/data/local/check_in_records.dart'});
       final sleepBuilders = lib.values.where((f) => f.identifiers.contains('SleepRecordService')).map((f) => f.path);
       expect(sleepBuilders.toSet(), {'lib/data/local/sense_storage.dart', 'lib/data/local/sleep_records.dart'});
+    });
+
+    // ---- Milestone E: personal baseline (read-only) -----------------------------------------
+    test('E: Insights read saved entries only through InsightsController and the read-only InsightsAccess', () {
+      const screen = 'lib/presentation/screens/insights_screen.dart';
+      const controller = 'lib/core/state/insights_controller.dart';
+      const scope = 'lib/presentation/widgets/sense_storage_scope.dart';
+      const reader = 'lib/data/local/insights_records.dart';
+      const domain = 'lib/domain/personal_insights.dart';
+      final s = lib[screen]!;
+      expect(s.identifiers, containsAll(['InsightsController', 'insightsAccessOf']));
+      expect(s.identifiers.intersection({'InsightsAccess', 'SenseStorage', 'SenseStorageScope', 'StoredRecord'}), isEmpty);
+      // The screen's one use of the access is handing it to its controller.
+      expect(s.identifierCounts['insightsAccessOf'], 1);
+      expect(s.callSites['insightsAccessOf'], {'InsightsController(access:)'});
+      final users = lib.values
+          .where((f) => !f.path.startsWith('lib/data/'))
+          .where((f) => f.identifiers.intersection({'InsightsAccess', 'insightsAccessOf'}).isNotEmpty)
+          .map((f) => f.path)
+          .toSet();
+      expect(users, {screen, controller, scope});
+      // Consent comes from the persisted snapshot read with the records, never
+      // from in-memory preferences.
+      for (final p in [screen, controller, domain]) {
+        expect(lib[p]!.identifiers.intersection({'ConsentPreferences', 'InputModality', 'isEnabled'}), isEmpty,
+            reason: p);
+        expect(lib[p]!.projectDependencies, isNot(contains('lib/core/state/consent_preferences.dart')), reason: p);
+      }
+      expect(lib[reader]!.memberAccesses, contains('snapshot'));
+      // Read-only: neither the reader nor the controller can write anything.
+      const writes = {'upsert', 'save', 'recordChange', 'deleteByDate', 'insert', 'update', 'delete', 'execute'};
+      expect(lib[reader]!.memberAccesses.intersection(writes), isEmpty);
+      expect(lib[controller]!.memberAccesses.intersection(writes), isEmpty);
+      expect(lib[controller]!.memberAccesses, contains('loadWindow'));
+      // The analysis is pure: it uses only the existing engine, no storage or Flutter.
+      expect(lib[domain]!.uris, ['baseline_engine.dart']);
+      // Insights never reach a write surface of the input screens.
+      expect(
+          s.identifiers.intersection({
+            'WorkloadController', 'workloadAccessOf', 'CheckInController', 'checkInAccessOf', 'SleepController',
+            'sleepAccessOf',
+          }),
+          isEmpty);
     });
 
     // ---- Milestone K4: Sleep persistence boundary ------------------------------------------

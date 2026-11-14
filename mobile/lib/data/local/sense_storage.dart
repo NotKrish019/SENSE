@@ -34,6 +34,7 @@ import 'package:sqflite/sqlite_api.dart';
 
 import 'encrypted/encrypted_database.dart';
 import 'check_in_records.dart';
+import 'insights_records.dart';
 import 'local_data_store.dart';
 import 'sleep_records.dart';
 import 'workload_records.dart';
@@ -56,7 +57,26 @@ export 'check_in_records.dart'
         CheckInSaveInvalid,
         CheckInSaveFailed;
 export 'local_data_store.dart'
-    show WorkloadEntry, CheckInEntry, SleepEntry, LocalDay, Provenance, StoredRecord, ConsentDenialReason;
+    show
+        DailyEntry,
+        WorkloadEntry,
+        CheckInEntry,
+        SleepEntry,
+        LocalDay,
+        Provenance,
+        StoredRecord,
+        ConsentDenialReason;
+export 'insights_records.dart'
+    show
+        InsightsAccess,
+        InsightsStorageStatus,
+        ModalityRecords,
+        ModalityRecordsAvailable,
+        ModalityConsentOff,
+        ObservationWindowOutcome,
+        ObservationWindowLoaded,
+        ObservationWindowUnavailable,
+        ObservationWindowFailed;
 export 'sleep_records.dart'
     show
         SleepAccess,
@@ -276,6 +296,11 @@ class SenseStorage extends ChangeNotifier {
   /// The narrow sleep operations for screens (Milestone K4). Follows this
   /// owner's state; never exposes the database, store or repositories.
   late final SleepAccess sleep = _StorageSleepAccess(this);
+
+  /// The narrow, read-only observation surface for Insights (personal
+  /// baseline). Follows this owner's state; never exposes the database,
+  /// store or repositories, and cannot write.
+  late final InsightsAccess insights = _StorageInsightsAccess(this);
 
   void _set(SenseStorageState s) {
     _state = s;
@@ -558,6 +583,48 @@ class _StorageSleepAccess implements SleepAccess {
   @override
   Future<SleepSaveOutcome> save(SleepEntry entry) async =>
       await _current()?.save(entry) ?? const SleepSaveUnavailable();
+
+  @override
+  void addListener(void Function() listener) => _owner.addListener(listener);
+
+  @override
+  void removeListener(void Function() listener) => _owner.removeListener(listener);
+}
+
+/// [InsightsAccess] over the owner's current state: each read uses the
+/// connection that is ready at that moment, and never opens anything.
+class _StorageInsightsAccess implements InsightsAccess {
+  final SenseStorage _owner;
+  StorageReady? _boundTo;
+  ObservationRecordService? _service;
+
+  _StorageInsightsAccess(this._owner);
+
+  ObservationRecordService? _current() {
+    final r = _owner.ready;
+    if (r == null) return null;
+    if (!identical(r, _boundTo)) {
+      _boundTo = r;
+      _service = ObservationRecordService(r.database, r.profile.localPersonId, clock: _owner._clock, ids: _owner._ids);
+    }
+    return _service;
+  }
+
+  @override
+  InsightsStorageStatus get status => switch (_owner.state) {
+        StorageReady() => InsightsStorageStatus.open,
+        StorageOpening() => InsightsStorageStatus.opening,
+        StorageUnavailable(:final reason) =>
+          reason.isFailure ? InsightsStorageStatus.unavailable : InsightsStorageStatus.notConnected,
+        StorageClosed() => InsightsStorageStatus.unavailable,
+      };
+
+  @override
+  bool get isDevelopment => _owner.ready?.isDevelopment ?? _owner.developmentStorageEnabled;
+
+  @override
+  Future<ObservationWindowOutcome> loadWindow({required String fromDate, required String toDate}) async =>
+      await _current()?.loadWindow(fromDate: fromDate, toDate: toDate) ?? const ObservationWindowUnavailable();
 
   @override
   void addListener(void Function() listener) => _owner.addListener(listener);
