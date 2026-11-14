@@ -130,7 +130,7 @@ void main() {
       expect(access.records, hasLength(1));
       expect(access.saveCalls.single.day, LocalDay(today, tz));
       expect(find.text("Today's workload entry was saved in development storage. Development data, not for participants."),
-          findsNWidgets(2)); // status line and message
+          findsOneWidget); // inline in the status line (no overlay)
       expect(c.phase, WorkloadPhase.saved);
     });
 
@@ -145,7 +145,7 @@ void main() {
       t.semantics.tap(find.semantics.byLabel('One more deadline'));
       await t.pumpAndSettle();
       await tapSave(t);
-      expect(find.text("Today's workload entry was updated."), findsNWidgets(2));
+      expect(find.text("Today's workload entry was updated."), findsOneWidget);
       expect(access.records[today]!.id, 'existing-id');
       expect(access.records, hasLength(1));
       expect(c.existingEntry!.entry.deadlines48h, 1);
@@ -196,7 +196,7 @@ void main() {
       await t.pump();
       await tapSave(t);
       const msg = 'Workload is turned off in your data and consent preferences, so nothing was saved.';
-      expect(find.text(msg), findsNWidgets(2));
+      expect(find.text(msg), findsOneWidget);
       expect(c.effort, 5);
       expect(savedClaim(), findsNothing);
       await t.ensureVisible(find.text('Review data and consent preferences'));
@@ -211,7 +211,7 @@ void main() {
       await pumpScreen(t, a: FakeWorkloadAccess(status: WorkloadStorageStatus.unavailable));
       expect(status(t), startsWith('Secure storage is unavailable'));
       await tapSave(t);
-      expect(find.textContaining('Secure storage is unavailable'), findsNWidgets(2));
+      expect(find.textContaining('Secure storage is unavailable'), findsOneWidget);
       expect(savedClaim(), findsNothing);
     });
 
@@ -224,7 +224,7 @@ void main() {
       await t.pump();
       await tapSave(t);
       expect(find.text('Your workload rating could not be saved. Your answers are still here, so you can try again.'),
-          findsNWidgets(2));
+          findsOneWidget);
       expect(node(t, 'Mental demand').getSemanticsData().value, '1 of 5');
       expect(find.bySemanticsLabel('2 deadlines'), findsOneWidget);
       expect(savedClaim(), findsNothing);

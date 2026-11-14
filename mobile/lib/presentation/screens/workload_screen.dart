@@ -41,6 +41,11 @@ class WorkloadScreen extends StatefulWidget {
 class _WorkloadScreenState extends State<WorkloadScreen> {
   WorkloadController? _controller;
   bool _ownsController = false;
+
+  /// A save outcome the status line cannot express from the controller's
+  /// state alone (the date changed). Shown inline in the status line, never
+  /// as an overlay; cleared by the next save.
+  String? _notice;
   final ScrollController _scroll = ScrollController();
 
   WorkloadController get _c => _controller!;
@@ -160,7 +165,7 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
                   ),
                   const SizedBox(height: 30),
                   if (_c.persistenceConnected)
-                    _WorkloadStatus(controller: _c, onReviewConsent: _openConsent)
+                    _WorkloadStatus(controller: _c, notice: _notice, onReviewConsent: _openConsent)
                   else
                     const NatureNotSavedNote(),
                   const SizedBox(height: 16),
@@ -182,8 +187,11 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
         MaterialPageRoute(builder: (_) => const ConsentScreen(isSettingsMode: true)),
       );
 
+  /// Saves, then reports the outcome INLINE: the live status line just above
+  /// Save shows it (saved, updated, denied, failed, date changed), so no
+  /// floating message ever covers the Save button.
   Future<void> _saveWorkload() async {
-    final messenger = ScaffoldMessenger.maybeOf(context);
+    setState(() => _notice = null);
     final result = await _c.save();
     if (!mounted) return;
     if (result == WorkloadSaveResult.notConnected) {
@@ -191,17 +199,9 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
       showNatureNotSavedMessage(context, 'workload rating');
       return;
     }
-    final message = _WorkloadStatus.messageFor(result, development: _c.isDevelopment);
-    if (message == null) return;
-    messenger
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message, style: NatureType.body.copyWith(color: NatureColors.paper)),
-        backgroundColor: NatureColors.ink,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: NatureRadii.smBorder),
-        duration: const Duration(seconds: 4),
-      ));
+    if (result == WorkloadSaveResult.dayChanged) {
+      setState(() => _notice = _WorkloadStatus.dayChangedText);
+    }
   }
 }
 
@@ -209,8 +209,11 @@ class _WorkloadScreenState extends State<WorkloadScreen> {
 /// what the last save actually did (Milestone K2).
 class _WorkloadStatus extends StatelessWidget {
   final WorkloadController controller;
+
+  /// Overrides the state's text with a specific outcome (see [_WorkloadScreenState._notice]).
+  final String? notice;
   final VoidCallback onReviewConsent;
-  const _WorkloadStatus({required this.controller, required this.onReviewConsent});
+  const _WorkloadStatus({required this.controller, required this.notice, required this.onReviewConsent});
 
   static String savedText(bool development) => development
       ? "Today's workload entry was saved in development storage. Development data, not for participants."
@@ -224,17 +227,6 @@ class _WorkloadStatus extends StatelessWidget {
       'Your workload rating could not be saved. Your answers are still here, so you can try again.';
   static const String dayChangedText =
       "The date changed, so nothing was saved. The form now shows today's entry.";
-
-  /// The message after a save, or null when there is nothing to report.
-  static String? messageFor(WorkloadSaveResult r, {required bool development}) => switch (r) {
-        WorkloadSaveResult.saved => savedText(development),
-        WorkloadSaveResult.updated => updatedText,
-        WorkloadSaveResult.consentDenied => consentDeniedText,
-        WorkloadSaveResult.storageUnavailable => unavailableText,
-        WorkloadSaveResult.failed => failedText,
-        WorkloadSaveResult.dayChanged => dayChangedText,
-        WorkloadSaveResult.notConnected || WorkloadSaveResult.notReady => null,
-      };
 
   String get _text {
     final c = controller;
@@ -284,7 +276,7 @@ class _WorkloadStatus extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(_text,
+                child: Text(notice ?? _text,
                     key: const Key('workload-status'), style: NatureType.bodyMuted.copyWith(fontSize: 13)),
               ),
             ],

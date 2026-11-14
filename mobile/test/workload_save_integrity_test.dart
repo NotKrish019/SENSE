@@ -140,7 +140,7 @@ void main() {
       expect(slider(t, 0).value, '4 of 5');
       expect(slider(t, 1).value, '2 of 5');
       expect(find.bySemanticsLabel('3 deadlines'), findsOneWidget);
-      expect(find.textContaining("Today's workload entry was saved"), findsWidgets);
+      expect(find.textContaining("Today's workload entry was saved"), findsOneWidget);
       h.dispose();
     });
 
@@ -156,7 +156,7 @@ void main() {
       expect([r.entry.mentalDemand, r.entry.effort, r.entry.deadlines48h], [4, 2, 2]);
       expect([c.mentalDemand, c.effort, c.deadlines], [4, 2, 2]);
       expect(c.phase, WorkloadPhase.updated);
-      expect(find.text("Today's workload entry was updated."), findsWidgets);
+      expect(find.text("Today's workload entry was updated."), findsOneWidget);
       h.dispose();
     });
 
@@ -170,9 +170,104 @@ void main() {
       expect([c.mentalDemand, c.effort, c.deadlines], [4, 2, 3]);
       expect(slider(t, 0).value, '4 of 5');
       expect(find.textContaining('entry was saved'), findsNothing);
-      expect(find.textContaining('could not be saved'), findsWidgets);
+      expect(find.textContaining('could not be saved'), findsOneWidget);
       expectInputsEnabled(t, true);
       h.dispose();
+    });
+  });
+
+  group('Inline save feedback (no floating message over Save)', () {
+    const savedText =
+        "Today's workload entry was saved in development storage. Development data, not for participants.";
+    const updatedText = "Today's workload entry was updated.";
+
+    /// Makes any tap whose target is covered fail the test.
+    void fatalMisses() {
+      final previous = WidgetController.hitTestWarningShouldBeFatal;
+      WidgetController.hitTestWarningShouldBeFatal = true;
+      addTearDown(() => WidgetController.hitTestWarningShouldBeFatal = previous);
+    }
+
+    Future<void> commitHeldSave(WidgetTester t) async {
+      access.saveGate!.complete();
+      await t.pump(); // the save completes; no extra time passes
+      await t.pump();
+    }
+
+    testWidgets('a first save confirms inline above Save; nothing overlays it; Save works again at once', (t) async {
+      fatalMisses();
+      final c = await startHeldSave(t);
+      expect(find.text(savedText), findsNothing, reason: 'no confirmation before the commit');
+      await commitHeldSave(t);
+      expect(c.phase, WorkloadPhase.saved);
+      expect(find.text(savedText), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing, reason: 'no floating message');
+      final status = t.getRect(find.byKey(const Key('workload-status')));
+      final button = t.getRect(find.text(save));
+      expect(status.bottom, lessThanOrEqualTo(button.top), reason: 'the confirmation sits above Save');
+      expect(status.overlaps(button), isFalse);
+      // Immediately save again (an update): the button is not covered.
+      c.incrementDeadlines();
+      await t.pump();
+      access.saveGate = null;
+      await t.tap(find.text(save));
+      await t.pump();
+      await t.pump();
+      expect(access.saveCalls, hasLength(2));
+      expect(c.phase, WorkloadPhase.updated);
+      expect(find.text(updatedText), findsOneWidget, reason: 'an update is distinguishable from the first save');
+      expect(find.text(savedText), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets("updating today's existing entry confirms inline with the update wording", (t) async {
+      fatalMisses();
+      access.seed(today, tz, demand: 2, effort: 2, deadlines: 2, changed: WorkloadEntry.allFields);
+      await startHeldSave(t);
+      await commitHeldSave(t);
+      expect(find.text(updatedText), findsOneWidget);
+      expect(find.text(savedText), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(enabled(sem(t, find.bySemanticsLabel(save))), isTrue, reason: 'Save is usable again');
+    });
+
+    testWidgets('a failed save shows the inline error, never a confirmation; values kept; Save usable', (t) async {
+      access.saveOutcome = const WorkloadSaveFailed();
+      final c = await startHeldSave(t);
+      await commitHeldSave(t);
+      expect(find.text(savedText), findsNothing);
+      expect(find.text(updatedText), findsNothing);
+      expect(find.text('Your workload rating could not be saved. Your answers are still here, so you can try again.'),
+          findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      expect([c.mentalDemand, c.effort, c.deadlines], [4, 2, 3]);
+      expect(c.canSave, isTrue);
+    });
+
+    testWidgets('a date change is reported inline and writes nothing', (t) async {
+      var now = morning;
+      t.view.physicalSize = const Size(412 * 3, 3000 * 3);
+      t.view.devicePixelRatio = 3.0;
+      addTearDown(t.view.resetPhysicalSize);
+      addTearDown(t.view.resetDevicePixelRatio);
+      final c = WorkloadController(access: access, now: () => now);
+      addTearDown(c.dispose);
+      await t.pumpWidget(MaterialApp(theme: AppTheme.lightTheme, home: WorkloadScreen(controller: c)));
+      await t.pumpAndSettle();
+      now = DateTime(2026, 11, 12, 0, 5);
+      await t.ensureVisible(find.text(save));
+      await t.pumpAndSettle();
+      await t.tap(find.text(save));
+      await t.pumpAndSettle();
+      expect(access.saveCalls, isEmpty);
+      expect(find.text("The date changed, so nothing was saved. The form now shows today's entry."), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing);
+      // The notice is cleared by the next save attempt, which writes the new day.
+      await t.tap(find.text(save));
+      await t.pumpAndSettle();
+      expect(access.saveCalls.single.day.date, '2026-11-12');
+      expect(find.textContaining('The date changed'), findsNothing);
+      expect(find.text(savedText), findsOneWidget);
     });
   });
 }
